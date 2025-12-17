@@ -158,9 +158,11 @@ set routing-options forwarding-table export LB
 
   interface Ethernet1/1  
     ip router ospf 0 area 0.0.0.0
+    ip ospf network point-to-point
 
   interface Ethernet1/2  
     ip router ospf 0 area 0.0.0.0
+    ip ospf network point-to-point
 
 Для всех Spine одинаковая(кроме router-id, он равен Lo):
 
@@ -174,128 +176,86 @@ set routing-options forwarding-table export LB
 
   interface Ethernet1/1  
     ip router ospf 0 area 0.0.0.0
+    ip ospf network point-to-point
 
   interface Ethernet1/2  
     ip router ospf 0 area 0.0.0.0
+    ip ospf network point-to-point
 
   interface Ethernet1/3  
     ip router ospf 0 area 0.0.0.0
+    ip ospf network point-to-point
 
 
 Сверка database
 
-NXOS-**Leaf1**# show ip ospf  database  
+NXOS-**Leaf1**# sh ip ospf database 
 
-    OSPF Router with ID (10.0.255.1) (Process ID 0 VRF default)
+        OSPF Router with ID (10.0.255.1) (Process ID 0 VRF default)
+
                 Router Link States (Area 0.0.0.0)
 
     Link ID         ADV Router      Age        Seq#       Checksum Link Count
-    10.0.0.1        10.0.0.1        953        0x80000006 0xba7a   4   
-    10.0.0.2        10.0.0.2        801        0x80000006 0x2705   4   
-    10.0.255.1      10.0.255.1      805        0x80000006 0x840b   3   
-    10.0.255.2      10.0.255.2      807        0x80000006 0x275d   3   
-    10.0.255.3      10.0.255.3      802        0x80000004 0x1368   3   
+    10.0.0.1        10.0.0.1        171        0x8000000f 0xe183   7   
+    10.0.0.2        10.0.0.2        124        0x8000000e 0x1a43   7   
+    10.0.255.1      10.0.255.1      128        0x8000000d 0xad57   5   
+    10.0.255.2      10.0.255.2      125        0x8000000d 0xc831   5   
+    10.0.255.3      10.0.255.3      128        0x8000000b 0x846c   5   
 
-                Network Link States (Area 0.0.0.0)
 
-    Link ID         ADV Router      Age        Seq#       Checksum 
-    10.0.1.0        10.0.255.1      969        0x80000002 0x58d5
-    10.0.1.2        10.0.255.2      970        0x80000002 0x48e1
-    10.0.1.4        10.0.255.3      959        0x80000002 0x38ed
-    10.0.2.0        10.0.255.1      805        0x80000002 0x5bd0
-    10.0.2.2        10.0.255.2      807        0x80000002 0x4bdc
-    10.0.2.4        10.0.255.3      802        0x80000002 0x3be8
+NXOS-**Leaf2**# sh ip ospf  database 
 
-NXOS-**Leaf2**# show ip ospf  database 
+        OSPF Router with ID (10.0.255.2) (Process ID 0 VRF default)
 
-    OSPF Router with ID (10.0.255.2) (Process ID 0 VRF default)
                 Router Link States (Area 0.0.0.0)
 
     Link ID         ADV Router      Age        Seq#       Checksum Link Count
-    10.0.0.1        10.0.0.1        987        0x80000006 0xba7a   4   
-    10.0.0.2        10.0.0.2        838        0x80000006 0x2705   4   
-    10.0.255.1      10.0.255.1      842        0x80000006 0x840b   3   
-    10.0.255.2      10.0.255.2      840        0x80000006 0x275d   3   
-    10.0.255.3      10.0.255.3      837        0x80000004 0x1368   3   
+    10.0.0.1        10.0.0.1        227        0x8000000f 0xe183   7   
+    10.0.0.2        10.0.0.2        180        0x8000000e 0x1a43   7   
+    10.0.255.1      10.0.255.1      186        0x8000000d 0xad57   5   
+    10.0.255.2      10.0.255.2      179        0x8000000d 0xc831   5   
+    10.0.255.3      10.0.255.3      184        0x8000000b 0x846c   5   
 
-                Network Link States (Area 0.0.0.0)
 
-    Link ID         ADV Router      Age        Seq#       Checksum 
-    10.0.1.0        10.0.255.1      1006       0x80000002 0x58d5
-    10.0.1.2        10.0.255.2      1003       0x80000002 0x48e1
-    10.0.1.4        10.0.255.3      993        0x80000002 0x38ed
-    10.0.2.0        10.0.255.1      842        0x80000002 0x5bd0
-    10.0.2.2        10.0.255.2      840        0x80000002 0x4bdc
-    10.0.2.4        10.0.255.3      837        0x80000002 0x3be8
-
-NXOS-**Leaf3**(config-router)# show ip ospf  database 
+NXOS-**Leaf3**# sh ip ospf database 
 
         OSPF Router with ID (10.0.255.3) (Process ID 0 VRF default)
 
                 Router Link States (Area 0.0.0.0)
 
     Link ID         ADV Router      Age        Seq#       Checksum Link Count
-    10.0.0.1        10.0.0.1        989        0x80000006 0xba7a   4   
-    10.0.0.2        10.0.0.2        840        0x80000006 0x2705   4   
-    10.0.255.1      10.0.255.1      844        0x80000006 0x840b   3   
-    10.0.255.2      10.0.255.2      844        0x80000006 0x275d   3   
-    10.0.255.3      10.0.255.3      837        0x80000004 0x1368   3   
+    10.0.0.1        10.0.0.1        212        0x8000000f 0xe183   7   
+    10.0.0.2        10.0.0.2        165        0x8000000e 0x1a43   7   
+    10.0.255.1      10.0.255.1      171        0x8000000d 0xad57   5   
+    10.0.255.2      10.0.255.2      167        0x8000000d 0xc831   5   
+    10.0.255.3      10.0.255.3      167        0x8000000b 0x846c   5   
 
-                Network Link States (Area 0.0.0.0)
 
-    Link ID         ADV Router      Age        Seq#       Checksum 
-    10.0.1.0        10.0.255.1      1007       0x80000002 0x58d5
-    10.0.1.2        10.0.255.2      1006       0x80000002 0x48e1
-    10.0.1.4        10.0.255.3      993        0x80000002 0x38ed
-    10.0.2.0        10.0.255.1      844        0x80000002 0x5bd0
-    10.0.2.2        10.0.255.2      844        0x80000002 0x4bdc
-    10.0.2.4        10.0.255.3      837        0x80000002 0x3be8
-
-NXOS-**Spine1**# show ip ospf  database 
+NXOS-**Spine1**# sh ip ospf database 
 
         OSPF Router with ID (10.0.0.1) (Process ID 0 VRF default)
 
                 Router Link States (Area 0.0.0.0)
 
     Link ID         ADV Router      Age        Seq#       Checksum Link Count
-    10.0.0.1        10.0.0.1        990        0x80000006 0xba7a   4   
-    10.0.0.2        10.0.0.2        841        0x80000006 0x2705   4   
-    10.0.255.1      10.0.255.1      845        0x80000006 0x840b   3   
-    10.0.255.2      10.0.255.2      845        0x80000006 0x275d   3   
-    10.0.255.3      10.0.255.3      840        0x80000004 0x1368   3   
+    10.0.0.1        10.0.0.1        290        0x8000000f 0xe183   7   
+    10.0.0.2        10.0.0.2        244        0x8000000e 0x1a43   7   
+    10.0.255.1      10.0.255.1      248        0x8000000d 0xad57   5   
+    10.0.255.2      10.0.255.2      244        0x8000000d 0xc831   5   
+    10.0.255.3      10.0.255.3      247        0x8000000b 0x846c   5    
 
-                Network Link States (Area 0.0.0.0)
+NXOS-**Spine2**# sh ip ospf  database
 
-    Link ID         ADV Router      Age        Seq#       Checksum 
-    10.0.1.0        10.0.255.1      1009       0x80000002 0x58d5
-    10.0.1.2        10.0.255.2      1008       0x80000002 0x48e1
-    10.0.1.4        10.0.255.3      996        0x80000002 0x38ed
-    10.0.2.0        10.0.255.1      845        0x80000002 0x5bd0
-    10.0.2.2        10.0.255.2      845        0x80000002 0x4bdc
-    10.0.2.4        10.0.255.3      840        0x80000002 0x3be8
-
-NXOS-**Spine2**# show ip ospf  database 
- 
         OSPF Router with ID (10.0.0.2) (Process ID 0 VRF default)
 
                 Router Link States (Area 0.0.0.0)
 
     Link ID         ADV Router      Age        Seq#       Checksum Link Count
-    10.0.0.1        10.0.0.1        997        0x80000006 0xba7a   4   
-    10.0.0.2        10.0.0.2        844        0x80000006 0x2705   4   
-    10.0.255.1      10.0.255.1      852        0x80000006 0x840b   3   
-    10.0.255.2      10.0.255.2      851        0x80000006 0x275d   3   
-    10.0.255.3      10.0.255.3      845        0x80000004 0x1368   3   
-
-                Network Link States (Area 0.0.0.0)
-
-    Link ID         ADV Router      Age        Seq#       Checksum 
-    10.0.1.0        10.0.255.1      1013       0x80000002 0x58d5
-    10.0.1.2        10.0.255.2      1014       0x80000002 0x48e1
-    10.0.1.4        10.0.255.3      1003       0x80000002 0x38ed
-    10.0.2.0        10.0.255.1      850        0x80000002 0x5bd0
-    10.0.2.2        10.0.255.2      850        0x80000002 0x4bdc
-    10.0.2.4        10.0.255.3      845        0x80000002 0x3be8
+    10.0.0.1        10.0.0.1        328        0x8000000f 0xe183   7   
+    10.0.0.2        10.0.0.2        280        0x8000000e 0x1a43   7   
+    10.0.255.1      10.0.255.1      287        0x8000000d 0xad57   5   
+    10.0.255.2      10.0.255.2      281        0x8000000d 0xc831   5   
+    10.0.255.3      10.0.255.3      284        0x8000000b 0x846c   5   
 
 
 Пинг Leaf 1 -> Leaf 2/3
