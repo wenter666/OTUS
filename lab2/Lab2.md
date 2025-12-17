@@ -1,7 +1,7 @@
 # Д/з №2
 ## Построение Underlay сети(OSPF)
 Цели занятия
-Исследовать построение Underlay сети с использованием OSPF.
+Настроить OSPF для Underlay сети.
 
 ## Сводная таблица (Адресация описана в Lab1)
 |  Оборудование  |      Lo0      |
@@ -145,3 +145,194 @@ set routing-options forwarding-table export LB
 В forwarding-table теперь есть два некст-хопа
 
 ## Выполнение Cisco
+
+Добавление конфигурации OSPF 
+Для всех Leaf одинаковая (кроме router-id, он равен Lo):
++ feature ospf
+
+  router ospf 0  
+    router-id 10.0.255.1
+
+  interface loopback0  
+    ip router ospf 0 area 0.0.0.0
+
+  interface Ethernet1/1  
+    ip router ospf 0 area 0.0.0.0
+
+  interface Ethernet1/2  
+    ip router ospf 0 area 0.0.0.0
+
+Для всех Spine одинаковая(кроме router-id, он равен Lo):
+
++ feature ospf
+
+  router ospf 0  
+    router-id 10.0.0.1
+
+  interface loopback0  
+    ip router ospf 0 area 0.0.0.0
+
+  interface Ethernet1/1  
+    ip router ospf 0 area 0.0.0.0
+
+  interface Ethernet1/2  
+    ip router ospf 0 area 0.0.0.0
+
+  interface Ethernet1/3  
+    ip router ospf 0 area 0.0.0.0
+
+
+Сверка database
+
+NXOS-**Leaf1**# show ip ospf  database  
+
+    OSPF Router with ID (10.0.255.1) (Process ID 0 VRF default)
+                Router Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum Link Count
+    10.0.0.1        10.0.0.1        953        0x80000006 0xba7a   4   
+    10.0.0.2        10.0.0.2        801        0x80000006 0x2705   4   
+    10.0.255.1      10.0.255.1      805        0x80000006 0x840b   3   
+    10.0.255.2      10.0.255.2      807        0x80000006 0x275d   3   
+    10.0.255.3      10.0.255.3      802        0x80000004 0x1368   3   
+
+                Network Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum 
+    10.0.1.0        10.0.255.1      969        0x80000002 0x58d5
+    10.0.1.2        10.0.255.2      970        0x80000002 0x48e1
+    10.0.1.4        10.0.255.3      959        0x80000002 0x38ed
+    10.0.2.0        10.0.255.1      805        0x80000002 0x5bd0
+    10.0.2.2        10.0.255.2      807        0x80000002 0x4bdc
+    10.0.2.4        10.0.255.3      802        0x80000002 0x3be8
+
+NXOS-**Leaf2**# show ip ospf  database 
+
+    OSPF Router with ID (10.0.255.2) (Process ID 0 VRF default)
+                Router Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum Link Count
+    10.0.0.1        10.0.0.1        987        0x80000006 0xba7a   4   
+    10.0.0.2        10.0.0.2        838        0x80000006 0x2705   4   
+    10.0.255.1      10.0.255.1      842        0x80000006 0x840b   3   
+    10.0.255.2      10.0.255.2      840        0x80000006 0x275d   3   
+    10.0.255.3      10.0.255.3      837        0x80000004 0x1368   3   
+
+                Network Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum 
+    10.0.1.0        10.0.255.1      1006       0x80000002 0x58d5
+    10.0.1.2        10.0.255.2      1003       0x80000002 0x48e1
+    10.0.1.4        10.0.255.3      993        0x80000002 0x38ed
+    10.0.2.0        10.0.255.1      842        0x80000002 0x5bd0
+    10.0.2.2        10.0.255.2      840        0x80000002 0x4bdc
+    10.0.2.4        10.0.255.3      837        0x80000002 0x3be8
+
+NXOS-**Leaf3**(config-router)# show ip ospf  database 
+
+        OSPF Router with ID (10.0.255.3) (Process ID 0 VRF default)
+
+                Router Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum Link Count
+    10.0.0.1        10.0.0.1        989        0x80000006 0xba7a   4   
+    10.0.0.2        10.0.0.2        840        0x80000006 0x2705   4   
+    10.0.255.1      10.0.255.1      844        0x80000006 0x840b   3   
+    10.0.255.2      10.0.255.2      844        0x80000006 0x275d   3   
+    10.0.255.3      10.0.255.3      837        0x80000004 0x1368   3   
+
+                Network Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum 
+    10.0.1.0        10.0.255.1      1007       0x80000002 0x58d5
+    10.0.1.2        10.0.255.2      1006       0x80000002 0x48e1
+    10.0.1.4        10.0.255.3      993        0x80000002 0x38ed
+    10.0.2.0        10.0.255.1      844        0x80000002 0x5bd0
+    10.0.2.2        10.0.255.2      844        0x80000002 0x4bdc
+    10.0.2.4        10.0.255.3      837        0x80000002 0x3be8
+
+NXOS-**Spine1**# show ip ospf  database 
+
+        OSPF Router with ID (10.0.0.1) (Process ID 0 VRF default)
+
+                Router Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum Link Count
+    10.0.0.1        10.0.0.1        990        0x80000006 0xba7a   4   
+    10.0.0.2        10.0.0.2        841        0x80000006 0x2705   4   
+    10.0.255.1      10.0.255.1      845        0x80000006 0x840b   3   
+    10.0.255.2      10.0.255.2      845        0x80000006 0x275d   3   
+    10.0.255.3      10.0.255.3      840        0x80000004 0x1368   3   
+
+                Network Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum 
+    10.0.1.0        10.0.255.1      1009       0x80000002 0x58d5
+    10.0.1.2        10.0.255.2      1008       0x80000002 0x48e1
+    10.0.1.4        10.0.255.3      996        0x80000002 0x38ed
+    10.0.2.0        10.0.255.1      845        0x80000002 0x5bd0
+    10.0.2.2        10.0.255.2      845        0x80000002 0x4bdc
+    10.0.2.4        10.0.255.3      840        0x80000002 0x3be8
+
+NXOS-**Spine2**# show ip ospf  database 
+ 
+        OSPF Router with ID (10.0.0.2) (Process ID 0 VRF default)
+
+                Router Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum Link Count
+    10.0.0.1        10.0.0.1        997        0x80000006 0xba7a   4   
+    10.0.0.2        10.0.0.2        844        0x80000006 0x2705   4   
+    10.0.255.1      10.0.255.1      852        0x80000006 0x840b   3   
+    10.0.255.2      10.0.255.2      851        0x80000006 0x275d   3   
+    10.0.255.3      10.0.255.3      845        0x80000004 0x1368   3   
+
+                Network Link States (Area 0.0.0.0)
+
+    Link ID         ADV Router      Age        Seq#       Checksum 
+    10.0.1.0        10.0.255.1      1013       0x80000002 0x58d5
+    10.0.1.2        10.0.255.2      1014       0x80000002 0x48e1
+    10.0.1.4        10.0.255.3      1003       0x80000002 0x38ed
+    10.0.2.0        10.0.255.1      850        0x80000002 0x5bd0
+    10.0.2.2        10.0.255.2      850        0x80000002 0x4bdc
+    10.0.2.4        10.0.255.3      845        0x80000002 0x3be8
+
+
+Пинг Leaf 1 -> Leaf 2/3
+
+    NXOS-Leaf1# ping 10.0.255.2
+    PING 10.0.255.2 (10.0.255.2): 56 data bytes
+    64 bytes from 10.0.255.2: icmp_seq=0 ttl=253 time=13.909 ms
+    64 bytes from 10.0.255.2: icmp_seq=1 ttl=253 time=6.477 ms
+    64 bytes from 10.0.255.2: icmp_seq=2 ttl=253 time=5.935 ms
+    64 bytes from 10.0.255.2: icmp_seq=3 ttl=253 time=7.834 ms
+    64 bytes from 10.0.255.2: icmp_seq=4 ttl=253 time=5.083 ms
+
+    --- 10.0.255.2 ping statistics ---
+    5 packets transmitted, 5 packets received, 0.00% packet loss
+    round-trip min/avg/max = 5.083/7.847/13.909 ms
+
+    NXOS-Leaf1# ping 10.0.255.3
+    PING 10.0.255.3 (10.0.255.3): 56 data bytes
+    64 bytes from 10.0.255.3: icmp_seq=0 ttl=253 time=18.028 ms
+    64 bytes from 10.0.255.3: icmp_seq=1 ttl=253 time=6.097 ms
+    64 bytes from 10.0.255.3: icmp_seq=2 ttl=253 time=7.533 ms
+    64 bytes from 10.0.255.3: icmp_seq=3 ttl=253 time=6.211 ms
+    64 bytes from 10.0.255.3: icmp_seq=4 ttl=253 time=4.907 ms
+
+    --- 10.0.255.3 ping statistics ---
+    5 packets transmitted, 5 packets received, 0.00% packet loss
+    round-trip min/avg/max = 4.907/8.555/18.028 ms
+
+
+
+Насколько понимаю ECMP на NEXUS включён по дефолту
+
+    NXOS-Leaf2# sh forwarding 10.0.255.1 detail 
+                          Ethernet1/1         
+
+
+    Prefix 10.0.255.1/32, No of paths: 2, Update time: Wed Dec 17 10:42:35 2025
+    Partial Install: No
+    10.0.1.3                                  Ethernet1/1         
+    10.0.2.3                                  Ethernet1/2       
