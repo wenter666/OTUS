@@ -46,8 +46,8 @@
 set protocols isis level 1 disable  
 set protocols isis reference-bandwidth 10g  
 set protocols isis level 2 wide-metrics-only  
-set protocols isis interface xe-0/0/2.0 point-to-point
-set protocols isis interface xe-0/0/1.0 point-to-point
+set protocols isis interface xe-0/0/2.0 point-to-point  
+set protocols isis interface xe-0/0/1.0 point-to-point  
 set protocols isis interface lo0.0 passive
 
 + set interfaces xe-0/0/1 unit 0 family iso  
@@ -59,9 +59,9 @@ set interfaces lo0 unit 0 family iso address 49.0001.0010.0025.5001.00
 set protocols isis level 1 disable  
 set protocols isis reference-bandwidth 10g  
 set protocols isis level 2 wide-metrics-only 
-set protocols isis interface xe-0/0/3.0 point-to-point
-set protocols isis interface xe-0/0/2.0 point-to-point
-set protocols isis interface xe-0/0/1.0 point-to-point
+set protocols isis interface xe-0/0/3.0 point-to-point  
+set protocols isis interface xe-0/0/2.0 point-to-point  
+set protocols isis interface xe-0/0/1.0 point-to-point  
 set protocols isis interface lo0.0 passive
 
 + set interfaces xe-0/0/1 unit 0 family iso  
