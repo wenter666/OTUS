@@ -1,7 +1,7 @@
 # Д/з №3
-## Построение Underlay сети(IS-IS)
-Цели занятия
-Настроить IS-IS для Underlay сети.
+## Построение Underlay сети(eBGP) 
+Цель:
+Настроить BGP для Underlay сети.
 
 ## Сводная таблица (Адресация описана в Lab1)
 |  Оборудование  |      Lo0      |
@@ -26,226 +26,309 @@
 
 
 ## Схема
-![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab3/%D0%A1%D1%85%D0%B5%D0%BC%D1%8B.png)
+![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab4/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0.png)
 
-## Сводная таблица NET
-|  Оборудование  |      Lo0      |            NET            |
-| -------------- |---------------|---------------------------|
-|    Leaf1       | 10.0.255.1/32 | 49.0001.0010.0025.5001.00 |
-|    Leaf2       | 10.0.255.2/32 | 49.0001.0010.0025.5002.00 |
-|    Leaf3       | 10.0.255.3/32 | 49.0001.0010.0025.5003.00 |
-|    Spine1      | 10.0.0.1/32   | 49.0001.0010.0000.0001.00 |
-|    Spine2      | 10.0.0.2/32   | 49.0001.0010.0000.0002.00 |
+## Сводная таблица AS
+|  Оборудование  |      Lo0      |   AS  |
+| -------------- |---------------|-------|
+|    Leaf1       | 10.0.255.1/32 | 65001 |
+|    Leaf2       | 10.0.255.2/32 | 65002 |
+|    Leaf3       | 10.0.255.3/32 | 65003 |
+|    Spine1      | 10.0.0.1/32   | 65000 |
+|    Spine2      | 10.0.0.2/32   | 65000 |
 
 
 ## Выполнение Juniper
-Добавление конфигурации IS-IS  
-Для всех Leaf одинаковая (Кроме NET идентификатора):
+Добавление конфигурации BGP  
+Для всех Leaf одинаковая (Кроме autonomous-system и ip neighbor):
 
-+ set protocols isis interface lo0.0 passive  
-set protocols isis level 1 disable  
-set protocols isis reference-bandwidth 10g  
-set protocols isis level 2 wide-metrics-only  
-set protocols isis interface xe-0/0/2.0 point-to-point  
-set protocols isis interface xe-0/0/1.0 point-to-point  
-set protocols isis interface lo0.0 passive
+#### Общие настройки BGP, BFD
 
-+ set interfaces xe-0/0/1 unit 0 family iso  
-set interfaces xe-0/0/2 unit 0 family iso  
-set interfaces lo0 unit 0 family iso address 49.0001.0010.0025.5001.00 
++ set routing-options autonomous-system 65001  
+set protocols bgp group SPINE log-updown  
+set protocols bgp group SPINE export Export_Loopback_BGP  
+set protocols bgp group SPINE graceful-restart  
+set protocols bgp group SPINE multipath multiple-as  
+set protocols bgp group SPINE bfd-liveness-detection minimum-interval 300  
+set protocols bgp group SPINE bfd-liveness-detection multiplier 3  
+set protocols bgp group SPINE bfd-liveness-detection session-mode single-hop  
+set protocols bgp group SPINE neighbor 10.0.1.1 peer-as 65000  
+set protocols bgp group SPINE neighbor 10.0.2.1 peer-as 65000  
 
-Для всех Spine одинаковая (Кроме NET идентификатора):
-+ set protocols isis interface lo0.0 passive  
-set protocols isis level 1 disable  
-set protocols isis reference-bandwidth 10g  
-set protocols isis level 2 wide-metrics-only  
-set protocols isis interface xe-0/0/3.0 point-to-point  
-set protocols isis interface xe-0/0/2.0 point-to-point  
-set protocols isis interface xe-0/0/1.0 point-to-point  
-set protocols isis interface lo0.0 passive
+#### Политика для распространения lo 
++ set policy-options policy-statement Export_Loopback_BGP term 1 from protocol direct  
+set policy-options policy-statement Export_Loopback_BGP term 1 from route-filter 10.0.255.0/24 prefix-length-range /32-/32  
+set policy-options policy-statement Export_Loopback_BGP term 1 then accept  
+set protocols bgp group SPINE export Export_Loopback_BGP  
 
-+ set interfaces xe-0/0/1 unit 0 family iso  
-set interfaces xe-0/0/2 unit 0 family iso  
-set interfaces xe-0/0/3 unit 0 family iso  
-set interfaces lo0 unit 0 family iso address 49.0001.0010.0000.0001.00 
-
-
-Сверка database
-
-root@vQFX-RE-**Leaf1**> show isis database 
-
-    IS-IS level 1 link-state database:
-      0 LSPs
-
-    IS-IS level 2 link-state database:
-    LSP ID                      Sequence Checksum Lifetime Attributes
-    vQFX-RE-Spine1.00-00             0x1   0x6325     1174 L1 L2
-    vQFX-RE-Spine2.00-00             0x1   0x1861     1174 L1 L2
-    vQFX-RE-Leaf1.00-00              0x1   0x27cc     1176 L1 L2
-    vQFX-RE-Leaf2.00-00              0x1   0x21c0     1173 L1 L2
-    vQFX-RE-Leaf3.00-00              0x1   0x1bb4     1172 L1 L2
-      5 LSPs
+#### Политика для балансировки
++ set policy-options policy-statement LB term LB then load-balance per-packet  
+set routing-options forwarding-table export LB  
+  
+    
+Для всех Spine одинаковая (Кроме autonomous-system и ip neighbor):
 
 
-root@vQFX-RE-**Leaf2**> show isis database
+#### Общие настройки BGP, BFD
 
-    IS-IS level 1 link-state database:
-      0 LSPs
++ set routing-options autonomous-system 65000  
+set protocols bgp group LEAF log-updown  
+set protocols bgp group LEAF export Export_Loopback_BGP  
+set protocols bgp group LEAF graceful-restart  
+set protocols bgp group LEAF multipath multiple-as  
+set protocols bgp group LEAF bfd-liveness-detection minimum-interval 300  
+set protocols bgp group LEAF bfd-liveness-detection multiplier 3  
+set protocols bgp group LEAF bfd-liveness-detection session-mode single-hop  
+set protocols bgp group LEAF neighbor 10.0.1.0 peer-as 65001  
+set protocols bgp group LEAF neighbor 10.0.1.2 peer-as 65002  
+set protocols bgp group LEAF neighbor 10.0.1.4 peer-as 65003  
 
-    IS-IS level 2 link-state database:
-    LSP ID                      Sequence Checksum Lifetime Attributes
-    vQFX-RE-Spine1.00-00             0x1   0x6325     1174 L1 L2
-    vQFX-RE-Spine2.00-00             0x1   0x1861     1174 L1 L2
-    vQFX-RE-Leaf1.00-00              0x1   0x27cc     1172 L1 L2
-    vQFX-RE-Leaf2.00-00              0x1   0x21c0     1176 L1 L2
-    vQFX-RE-Leaf3.00-00              0x1   0x1bb4     1172 L1 L2
-      5 LSPs
+#### Политика для распространения lo 
 
++ set policy-options policy-statement Export_Loopback_BGP term 1 from protocol direct  
+set policy-options policy-statement Export_Loopback_BGP term 1 from route-filter 10.0.0.0/24 prefix-length-range /32-/32  
+set policy-options policy-statement Export_Loopback_BGP term 1 then accept  
+set protocols bgp group LEAF export Export_Loopback_BGP  
 
-root@vQFX-RE-**Leaf3**> show isis database
+#### Политика для балансировки
 
-    IS-IS level 1 link-state database:
-      0 LSPs
++ set policy-options policy-statement LB term LB then load-balance per-packet  
+set routing-options forwarding-table export LB  
 
-    IS-IS level 2 link-state database:
-    LSP ID                      Sequence Checksum Lifetime Attributes
-    vQFX-RE-Spine1.00-00             0x1   0x6325     1174 L1 L2
-    vQFX-RE-Spine2.00-00             0x1   0x1861     1174 L1 L2
-    vQFX-RE-Leaf1.00-00              0x1   0x27cc     1172 L1 L2
-    vQFX-RE-Leaf2.00-00              0x1   0x21c0     1173 L1 L2
-    vQFX-RE-Leaf3.00-00              0x1   0x1bb4     1176 L1 L2
-      5 LSPs
+### Состояние BGP, BFD
 
+root@vQFX-RE-**Leaf1**> show bgp summary   
 
-root@vQFX-RE-**Spine1**> show isis database
-
-    IS-IS level 1 link-state database:
-      0 LSPs
-
-    IS-IS level 2 link-state database:
-    LSP ID                      Sequence Checksum Lifetime Attributes
-    vQFX-RE-Spine1.00-00             0x1   0x6325     1176 L1 L2
-    vQFX-RE-Spine2.00-00             0x1   0x1861     1172 L1 L2
-    vQFX-RE-Leaf1.00-00              0x1   0x27cc     1174 L1 L2
-    vQFX-RE-Leaf2.00-00              0x1   0x21c0     1174 L1 L2
-    vQFX-RE-Leaf3.00-00              0x1   0x1bb4     1174 L1 L2
-      5 LSPs
-
-root@vQFX-RE-**Spine2**> show isis database
-
-    IS-IS level 1 link-state database:
-      0 LSPs
-
-    IS-IS level 2 link-state database:
-    LSP ID                      Sequence Checksum Lifetime Attributes
-    vQFX-RE-Spine1.00-00             0x1   0x6325     1172 L1 L2
-    vQFX-RE-Spine2.00-00             0x1   0x1861     1176 L1 L2
-    vQFX-RE-Leaf1.00-00              0x1   0x27cc     1174 L1 L2
-    vQFX-RE-Leaf2.00-00              0x1   0x21c0     1174 L1 L2
-    vQFX-RE-Leaf3.00-00              0x1   0x1bb4     1174 L1 L2
-      5 LSPs
+      Threading mode: BGP I/O  
+      Groups: 1 Peers: 2 Down peers: 0  
+        Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending  
+        inet.0                 
+                           6          6          0          0          0          0  
+    Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Accepted/Damped...  
+    10.0.1.1              65000        401        402       0       1     2:57:41 Establ  
+      inet.0: 3/3/3/0  
+    10.0.2.1              65000        149        147       0       2     1:05:18 Establ  
+      inet.0: 3/3/3/0  
 
 
+root@vQFX-RE-**Leaf1**> show bfd session brief   
+
+                                                      Detect   Transmit  
+    Address                  State     Interface      Time     Interval  Multiplier  
+    10.0.1.1                 Up        xe-0/0/1.0     0.900     0.300        3     
+    10.0.2.1                 Up        xe-0/0/2.0     0.900     0.300        3     
+
+    2 sessions, 2 clients  
+    Cumulative transmit rate 6.7 pps, cumulative receive rate 6.7 pps  
+
+
+
+root@vQFX-RE-**Leaf2**> show bgp summary 
+
+    Threading mode: BGP I/O
+    Groups: 1 Peers: 2 Down peers: 0
+    Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending
+    inet.0               
+                           6          6          0          0          0          0
+    Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Accepted/Damped...
+    10.0.1.3              65000        407        401       0       0     2:59:29 Establ
+      inet.0: 3/3/3/0
+    10.0.2.3              65000        388        384       0       0     2:52:08 Establ
+      inet.0: 3/3/3/0
+
+root@vQFX-RE-**Leaf2**> show bfd session brief 
+
+                                                      Detect   Transmit
+    Address                  State     Interface      Time     Interval  Multiplier
+    10.0.1.3                 Up        xe-0/0/1.0     0.900     0.300        3   
+    10.0.2.3                 Up        xe-0/0/2.0     0.900     0.300        3   
+
+    2 sessions, 2 clients
+    Cumulative transmit rate 6.7 pps, cumulative receive rate 6.7 pps
+
+root@vQFX-RE-**Leaf3**> show bgp summary  
+
+    Threading mode: BGP I/O
+    Groups: 1 Peers: 2 Down peers: 0
+    Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending
+    inet.0               
+                           6          6          0          0          0          0
+    Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Accepted/Damped...
+    10.0.1.5              65000        143        144       0       3     1:03:33 Establ
+      inet.0: 3/3/3/0
+    10.0.2.5              65000        392        389       0       0     2:53:27 Establ
+      inet.0: 3/3/3/0
+
+
+root@vQFX-RE-**Leaf3**> show bfd session brief  
+
+                                                      Detect   Transmit
+    Address                  State     Interface      Time     Interval  Multiplier
+    10.0.1.5                 Up        xe-0/0/1.0     0.900     0.300        3   
+    10.0.2.5                 Up        xe-0/0/2.0     0.900     0.300        3   
+
+    2 sessions, 2 clients
+    Cumulative transmit rate 6.7 pps, cumulative receive rate 6.7 pps
+
+
+root@vQFX-RE-**Spine1**> show bgp summary 
+
+    Threading mode: BGP I/O
+    Groups: 1 Peers: 3 Down peers: 0
+    Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending
+    inet.0               
+                           3          3          0          0          0          0
+    Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Accepted/Damped...
+    10.0.1.0              65001        426        423       0       1     3:08:10 Establ
+      inet.0: 1/1/1/0
+    10.0.1.2              65002        412        417       0       0     3:04:11 Establ
+      inet.0: 1/1/1/0
+    10.0.1.4              65003        152        149       0       3     1:06:49 Establ
+      inet.0: 1/1/1/0
+
+root@vQFX-RE-**Spine1**> show bfd session brief 
+
+                                                      Detect   Transmit
+    Address                  State     Interface      Time     Interval  Multiplier
+    10.0.1.0                 Up        xe-0/0/1.0     0.900     0.300        3   
+    10.0.1.2                 Up        xe-0/0/2.0     0.900     0.300        3   
+    10.0.1.4                 Up        xe-0/0/3.0     0.900     0.300        3   
+
+    3 sessions, 3 clients
+    Cumulative transmit rate 10.0 pps, cumulative receive rate 10.0 pps
+
+
+root@vQFX-RE-**Spine2**> show bgp summary 
+
+    Threading mode: BGP I/O
+    Groups: 1 Peers: 3 Down peers: 0
+    Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending
+    inet.0               
+                           3          3          0          0          0          0
+    Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Accepted/Damped...
+    10.0.2.0              65001        175        174       0       2     1:17:28 Establ
+      inet.0: 1/1/1/0
+    10.0.2.2              65002        400        402       0       0     2:58:33 Establ
+      inet.0: 1/1/1/0
+    10.0.2.4              65003        400        401       0       0     2:58:24 Establ
+      inet.0: 1/1/1/0
+
+root@vQFX-RE-**Spine2**> show bfd session brief 
+
+                                                      Detect   Transmit
+    Address                  State     Interface      Time     Interval  Multiplier
+    10.0.2.0                 Up        xe-0/0/1.0     0.900     0.300        3   
+    10.0.2.2                 Up        xe-0/0/2.0     0.900     0.300        3   
+    10.0.2.4                 Up        xe-0/0/3.0     0.900     0.300        3   
+
+    3 sessions, 3 clients
+    Cumulative transmit rate 10.0 pps, cumulative receive rate 10.0 pps
 
 Пинг Leaf 1 -> Leaf 2/3 
 
-    root@vQFX-RE-Leaf1> ping 10.0.255.2
+root@vQFX-RE-Leaf1> ping 10.0.255.2  
+
     PING 10.0.255.2 (10.0.255.2): 56 data bytes
-    64 bytes from 10.0.255.2: icmp_seq=0 ttl=63 time=217.033 ms
-    64 bytes from 10.0.255.2: icmp_seq=1 ttl=63 time=217.225 ms
-    64 bytes from 10.0.255.2: icmp_seq=2 ttl=63 time=120.648 ms
-    64 bytes from 10.0.255.2: icmp_seq=3 ttl=63 time=122.597 ms
-
+    64 bytes from 10.0.255.2: icmp_seq=0 ttl=63 time=400.660 ms
+    64 bytes from 10.0.255.2: icmp_seq=1 ttl=63 time=314.399 ms
+    64 bytes from 10.0.255.2: icmp_seq=2 ttl=63 time=439.652 ms
+    64 bytes from 10.0.255.2: icmp_seq=3 ttl=63 time=250.332 ms
+    64 bytes from 10.0.255.2: icmp_seq=4 ttl=63 time=478.673 ms
+    ^C
     --- 10.0.255.2 ping statistics ---
-    4 packets transmitted, 4 packets received, 0% packet loss
-    round-trip min/avg/max/stddev = 120.648/169.376/217.225/47.758 ms
+    5 packets transmitted, 5 packets received, 0% packet loss
+    round-trip min/avg/max/stddev = 250.332/376.743/478.673/83.410 ms
 
-    root@vQFX-RE-Leaf1> ping 10.0.255.3    
+root@vQFX-RE-Leaf1> ping 10.0.255.3    
+
     PING 10.0.255.3 (10.0.255.3): 56 data bytes
-    64 bytes from 10.0.255.3: icmp_seq=0 ttl=63 time=146.134 ms
-    64 bytes from 10.0.255.3: icmp_seq=1 ttl=63 time=132.119 ms
-    64 bytes from 10.0.255.3: icmp_seq=2 ttl=63 time=123.679 ms
-    64 bytes from 10.0.255.3: icmp_seq=3 ttl=63 time=118.110 ms
+    64 bytes from 10.0.255.3: icmp_seq=0 ttl=63 time=399.397 ms
+    64 bytes from 10.0.255.3: icmp_seq=1 ttl=63 time=240.649 ms
+    64 bytes from 10.0.255.3: icmp_seq=2 ttl=63 time=356.099 ms
+    64 bytes from 10.0.255.3: icmp_seq=3 ttl=63 time=354.528 ms
     ^C
     --- 10.0.255.3 ping statistics ---
     4 packets transmitted, 4 packets received, 0% packet loss
-    round-trip min/avg/max/stddev = 118.110/130.011/146.134/10.561 ms
+    round-trip min/avg/max/stddev = 240.649/337.668/399.397/58.837 ms
 
-*PS: p2p линки тоже пингуются 100ms+, вероятно какая-то проблема виртаулизации*
-
- Добавленна балансировка 
-
-set policy-options policy-statement LB term LB then load-balance per-packet (На всякий случай. Даная конфа = Per-flow балансировке) \
-set routing-options forwarding-table export LB
-
-
-    root@vQFX-RE-Leaf1> show route forwarding-table destination 10.0.255.2 
-    Routing table: default.inet
-    Internet:
-    Enabled protocols: Bridging, 
-    Destination        Type RtRef Next hop           Type Index    NhRef Netif
-    10.0.255.2/32      user     0                    ulst   131070     3
-                              10.0.1.1           ucst     1734     6 xe-0/0/1.0
-                              10.0.2.1           ucst     1735     6 xe-0/0/2.0
-
-
-    root@vQFX-Leaf1> show route forwarding-table destination 10.0.255.3    
-    Routing table: default.inet
-    Internet:
-    Enabled protocols: Bridging, 
-    Destination        Type RtRef Next hop           Type Index    NhRef Netif
-    10.0.255.3/32      user     0                    ulst   131070     3
-                              10.0.1.1           ucst     1734     6 xe-0/0/1.0
-                              10.0.2.1           ucst     1735     6 xe-0/0/2.0
-
-В forwarding-table теперь есть два некст-хопа
-
-#### Таблица маршрутизации
+### Таблица маршрутизации
 
 root@vQFX-RE-Leaf1> show route 
 
-    inet.0: 15 destinations, 15 routes (15 active, 0 holddown, 0 hidden)
+    inet.0: 11 destinations, 13 routes (11 active, 0 holddown, 0 hidden)
     + = Active Route, - = Last Active, * = Both
 
-    10.0.0.1/32        *[IS-IS/18] 00:07:46, metric 1
+    10.0.0.1/32        *[BGP/170] 02:50:52, localpref 100
+                          AS path: 65000 I, validation-state: unverified
                         >  to 10.0.1.1 via xe-0/0/1.0
-    10.0.0.2/32        *[IS-IS/18] 00:07:39, metric 1
+    10.0.0.2/32        *[BGP/170] 01:21:33, localpref 100
+                          AS path: 65000 I, validation-state: unverified
                         >  to 10.0.2.1 via xe-0/0/2.0
-    10.0.1.0/31        *[Direct/0] 3d 03:07:47
+    10.0.1.0/31        *[Direct/0] 3w5d 03:31:14
                         >  via xe-0/0/1.0
-    10.0.1.0/32        *[Local/0] 3d 03:07:47
+    10.0.1.0/32        *[Local/0] 3w5d 03:31:14
                            Local via xe-0/0/1.0
-    10.0.1.2/31        *[IS-IS/18] 00:07:46, metric 2
-                        >  to 10.0.1.1 via xe-0/0/1.0
-    10.0.1.4/31        *[IS-IS/18] 00:07:46, metric 2
-                        >  to 10.0.1.1 via xe-0/0/1.0
-    10.0.2.0/31        *[Direct/0] 1w2d 19:44:07
+    10.0.2.0/31        *[Direct/0] 4w4d 20:07:34
                         >  via xe-0/0/2.0
-    10.0.2.0/32        *[Local/0] 1w2d 19:44:07
+    10.0.2.0/32        *[Local/0] 4w4d 20:07:34
                            Local via xe-0/0/2.0
-    10.0.2.2/31        *[IS-IS/18] 00:07:39, metric 2
-                        >  to 10.0.2.1 via xe-0/0/2.0
-    10.0.2.4/31        *[IS-IS/18] 00:07:39, metric 2
-                        >  to 10.0.2.1 via xe-0/0/2.0
-    10.0.255.1/32      *[Direct/0] 1w2d 19:46:33
+    10.0.255.1/32      *[Direct/0] 02:21:00
                         >  via lo0.0
-    10.0.255.2/32      *[IS-IS/18] 00:03:34, metric 2
+    10.0.255.2/32      *[BGP/170] 01:21:33, localpref 100
+                          AS path: 65000 65002 I, validation-state: unverified
                         >  to 10.0.1.1 via xe-0/0/1.0
                            to 10.0.2.1 via xe-0/0/2.0
-    10.0.255.3/32      *[IS-IS/18] 00:03:34, metric 2
+                        [BGP/170] 01:21:33, localpref 100
+                          AS path: 65000 65002 I, validation-state: unverified
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    10.0.255.3/32      *[BGP/170] 01:12:35, localpref 100, from 10.0.2.1
+                          AS path: 65000 65003 I, validation-state: unverified
                         >  to 10.0.1.1 via xe-0/0/1.0
                            to 10.0.2.1 via xe-0/0/2.0
-    169.254.0.0/24     *[Direct/0] 1w2d 19:46:35
+                        [BGP/170] 01:12:35, localpref 100
+                          AS path: 65000 65003 I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+    169.254.0.0/24     *[Direct/0] 4w4d 20:10:02
                         >  via em1.0
-    169.254.0.2/32     *[Local/0] 1w2d 19:46:35
+    169.254.0.2/32     *[Local/0] 4w4d 20:10:02
                            Local via em1.0
 
-    iso.0: 1 destinations, 1 routes (1 active, 0 holddown, 0 hidden)
-    + = Active Route, - = Last Active, * = Both
+Балансировка работает
 
-    49.0001.0010.0025.5001/72                
-                       *[Direct/0] 02:04:59
-                        >  via lo0.0    
+root@vQFX-RE-Leaf1> show route forwarding-table 
+
+    Routing table: default.inet
+    Internet:
+    Enabled protocols: Bridging, 
+    Destination        Type RtRef Next hop           Type Index    NhRef Netif
+    default            perm     0                    rjct       51     1
+    0.0.0.0/32         perm     0                    dscd       49     1
+    10.0.0.1/32        user     0 10.0.1.1           ucst     1734     5 xe-0/0/1.0
+    10.0.0.2/32        user     0 10.0.2.1           ucst     1735     5 xe-0/0/2.0
+    10.0.1.0/31        intf     0                    rslv     1731     1 xe-0/0/1.0
+    10.0.1.0/32        intf     0 10.0.1.0           locl     1730     2
+    10.0.1.0/32        dest     0 10.0.1.0           locl     1730     2
+    10.0.1.1/32        dest     1 2:5:86:71:cd:7     ucst     1734     5 xe-0/0/1.0
+    10.0.2.0/31        intf     0                    rslv     1733     1 xe-0/0/2.0
+    10.0.2.0/32        intf     0 10.0.2.0           locl     1732     2
+    10.0.2.0/32        dest     0 10.0.2.0           locl     1732     2
+    10.0.2.1/32        dest     1 2:5:86:71:2d:7     ucst     1735     5 xe-0/0/2.0
+    10.0.255.1/32      intf     0 10.0.255.1         locl     1700     1
+    10.0.255.2/32      user     0                    ulst   131070     3
+                                  10.0.1.1           ucst     1734     5 xe-0/0/1.0
+                                  10.0.2.1           ucst     1735     5 xe-0/0/2.0
+    10.0.255.3/32      user     0                    ulst   131070     3
+                                  10.0.1.1           ucst     1734     5 xe-0/0/1.0
+                                  10.0.2.1           ucst     1735     5 xe-0/0/2.0
+    169.254.0.0/24     intf     0                    rslv      323     1 em1.0
+    169.254.0.0/32     dest     0 169.254.0.0        recv      321     1 em1.0
+    169.254.0.1/32     dest     1 50:8e:bc:4:74:1    ucst      340     2 em1.0
+    169.254.0.2/32     intf     0 169.254.0.2        locl      322     2
+    169.254.0.2/32     dest     0 169.254.0.2        locl      322     2
+    169.254.0.255/32   dest     0 169.254.0.255      bcst      320     1 em1.0
+    224.0.0.0/4        perm     0                    mdsc       50     1
+    224.0.0.1/32       perm     0 224.0.0.1          mcst       46     1
+    255.255.255.255/32 perm     0                    bcst       47     1    
 
 ## Выполнение Cisco
 
