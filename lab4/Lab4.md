@@ -39,7 +39,7 @@
 
 
 ## Выполнение Juniper
-Добавление конфигурации BGP, BFD
+Добавление конфигурации BGP, BFD  
 Для всех Leaf одинаковая (Кроме autonomous-system и ip neighbor):
 
 #### Общие настройки BGP, BFD
@@ -497,7 +497,7 @@ NXOS-Leaf1# sh ip route
     '**' denotes best mcast next-hop
     '[x/y]' denotes [preference/metric]
     '%<string>' in via output denotes VRF <string>
-    
+
     10.0.1.0/31, ubest/mbest: 1/0, attached
         *via 10.0.1.0, Eth1/1, [0/0], 1d02h, direct
     10.0.1.0/32, ubest/mbest: 1/0, attached
