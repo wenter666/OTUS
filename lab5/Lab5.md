@@ -3,7 +3,7 @@
 Цель:
 Настроить Overlay на основе VxLAN EVPN для L2 связанности между клиентами.
 
-## Сводная таблица (Адресация описана в Lab1)
+## Сводная таблица (Добавлена адресация Client1-4)
 |  Оборудование  |      Lo0       |
 | -------------- |----------------| 
 |    Leaf1       | 10.0.255.1/32  | 
@@ -30,7 +30,7 @@
 
 
 ## Схема
-![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab4/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0.png)
+![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab5/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0.png)
 
 ## Сводная таблица AS
 |  Оборудование  |      Lo0      |   AS  |
@@ -46,11 +46,11 @@
 Добавление конфигурации BGP EVPN
 Для всех Leaf одинаковая (Кроме autonomous-system, ip neighbor, RT/RD):
 
-#### Общие настройки BGP, BFD
+#### Общие настройки BGP EVPN, VxLAN
 
 + set routing-options autonomous-system 65001    
 set routing-options router-id 10.0.255.1  
-set routing-options autonomous-system 65000  ***Для IBGP***
+set routing-options autonomous-system 65000  ***Для IBGP***  
 
 
 + set protocols bgp group UNDERLAY_EBGP log-updown  
@@ -64,7 +64,7 @@ set protocols bgp group UNDERLAY_EBGP bfd-liveness-detection session-mode single
 set protocols bgp group UNDERLAY_EBGP neighbor 10.0.1.1 peer-as 65100  
 set protocols bgp group UNDERLAY_EBGP neighbor 10.0.2.1 peer-as 65200  
 
-+ set protocols bgp group OVERLAY_EVPN-VxLAN type internal ***Для OVERLAY EBGP***
++ set protocols bgp group OVERLAY_EVPN-VxLAN type internal ***Для OVERLAY EBGP***  
 set protocols bgp group OVERLAY_EVPN-VxLAN local-address 10.0.255.1  
 set protocols bgp group OVERLAY_EVPN-VxLAN log-updown  
 set protocols bgp group OVERLAY_EVPN-VxLAN family evpn signaling  
@@ -83,20 +83,23 @@ set switch-options vrf-target auto - ***target для EVPN type 2,3***
 [Example: Configuring VNI Route Targets Automatically with Manual Override](https://www.juniper.net/documentation/us/en/software/junos/evpn/topics/example/vrf-target-auto-manual.html)
 
 ***Настройка vlan + привязка vni***
-**LEAF1**
-+ set vlans vlan100 vlan-id 100
-set vlans vlan100 vxlan vni 100100
-set vlans vlan300 vlan-id 300
-set vlans vlan300 vxlan vni 300300
+**LEAF1**  
++ set vlans vlan100 vlan-id 100  
+set vlans vlan100 vxlan vni 100100  
+set vlans vlan300 vlan-id 300  
+set vlans vlan300 vxlan vni 300300  
 
-**LEAF2**
-set vlans vlan100 vlan-id 100
-set vlans vlan100 vxlan vni 100100
+**LEAF2**  
++ set vlans vlan100 vlan-id 100  
+set vlans vlan100 vxlan vni 100100  
 
-**LEAF3**
-set vlans vlan200 vlan-id 200 
-set vlans vlan200 vxlan vni 300300 - ***Для примера где vlan разный но VNI один*** 
+**LEAF3**  
++ set vlans vlan200 vlan-id 200   
+set vlans vlan200 vxlan vni 300300 - ***Для примера где vlan разный но VNI один***   
 
+#### Настройка интерфейсов однотипная
++ set interfaces xe-0/0/3 unit 0 family ethernet-switching interface-mode access  
+set interfaces xe-0/0/3 unit 0 family ethernet-switching vlan members vlan200
 
 #### Политика для распространения lo 
 + set policy-options policy-statement Export_Loopback_BGP term 1 from protocol direct  
@@ -106,7 +109,8 @@ set policy-options policy-statement Export_Loopback_BGP term 1 then accept
 #### Политика для балансировки
 + set policy-options policy-statement LB term LB then load-balance per-packet  
 set routing-options forwarding-table export LB  
-    
+
+
 Для всех Spine одинаковая (Кроме autonomous-system и ip neighbor):
 
 
@@ -129,8 +133,8 @@ set protocols bgp group UNDERLAY_EBGP neighbor 10.0.2.4 peer-as 65003
 + set protocols bgp group OVERLAY_EVPN-VxLAN type internal  
 set protocols bgp group OVERLAY_EVPN-VxLAN log-updown  
 set protocols bgp group OVERLAY_EVPN-VxLAN family evpn signaling  
-set protocols bgp group OVERLAY_EVPN-VxLAN cluster 10.0.0.2 - ***RR***
-set protocols bgp group OVERLAY_EVPN-VxLAN graceful-restart  
+set protocols bgp group OVERLAY_EVPN-VxLAN cluster 10.0.0.2 - ***RR***  
+set protocols bgp group OVERLAY_EVPN-VxLAN graceful-restart    
 set protocols bgp group OVERLAY_EVPN-VxLAN allow 10.0.255.0/24 - ***устнавливаются сессии с пирами в этой подесети*** 
 
 #### Политика для распространения lo 
@@ -145,7 +149,7 @@ set routing-options forwarding-table export LB
 
 ### Состояние BGP (Только на SPINE)
 
-root@vQFX-RE-Spine1> show bgp summary
+root@vQFX-RE-**Spine1**> show bgp summary
 
     Threading mode: BGP I/O  
     Groups: 2 Peers: 6 Down peers: 0  
@@ -167,101 +171,372 @@ root@vQFX-RE-Spine1> show bgp summary
     10.0.255.2            65000      22000      22056       0       0 6d 22:42:57 Establ  
       bgp.evpn.0: 5/5/5/0  
     10.0.255.3            65000      22006      22045       0       0 6d 22:38:03 Establ  
+      bgp.evpn.0: 4/4/4/0
 
-Пинг Leaf 1 -> Leaf 2/3 
+root@vQFX-RE-****Spine2****> show bgp summary     
 
-root@vQFX-RE-Leaf1> ping 10.0.255.2  
+    Threading mode: BGP I/O
+    Groups: 2 Peers: 6 Down peers: 0
+    Unconfigured peers: 3
+    Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending
+    inet.0               
+                           8          6          0          0          0          0
+    bgp.evpn.0           
+                          16         16          0          0          0          0
+    Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Accepted/Damped...
+    10.0.2.0              65001        460        457       0      44     3:23:30 Establ
+      inet.0: 2/2/2/0
+    10.0.2.2              65002        269        268       0      40     1:58:39 Establ
+      inet.0: 2/3/3/0
+    10.0.2.4              65003        441        438       0      51     3:15:18 Establ
+      inet.0: 2/3/3/0
+    10.0.255.1            65000      22050      22034       0       0 6d 22:58:02 Establ
+      bgp.evpn.0: 7/7/7/0
+    10.0.255.2            65000      22016      22110       0       0 6d 22:50:11 Establ
+      bgp.evpn.0: 5/5/5/0
+    10.0.255.3            65000      22022      22100       0       0 6d 22:45:17 Establ
+      bgp.evpn.0: 4/4/4/0
 
-    PING 10.0.255.2 (10.0.255.2): 56 data bytes
-    64 bytes from 10.0.255.2: icmp_seq=0 ttl=63 time=400.660 ms
-    64 bytes from 10.0.255.2: icmp_seq=1 ttl=63 time=314.399 ms
-    64 bytes from 10.0.255.2: icmp_seq=2 ttl=63 time=439.652 ms
-    64 bytes from 10.0.255.2: icmp_seq=3 ttl=63 time=250.332 ms
-    64 bytes from 10.0.255.2: icmp_seq=4 ttl=63 time=478.673 ms
+### Вывод по vlan
+
+root@vQFX-RE-******Leaf1**> show vlans brief    
+
+    Routing instance        VLAN name             Tag          Interfaces
+    default-switch          default               1        
+                                                                
+    default-switch          vlan100               100      
+                                                              vtep.32769*
+                                                              xe-0/0/3.0*
+    default-switch          vlan300               300      
+                                                              vtep.32770*
+                                                              xe-0/0/4.0*
+root@vQFX-RE-**Leaf2**> show vlans brief 
+
+    Routing instance        VLAN name             Tag          Interfaces
+    default-switch          default               1        
+
+    default-switch          vlan100               100      
+                                                               vtep.32769*
+                                                               xe-0/0/3.0*
+root@vQFX-RE-**Leaf3**> show vlans brief     
+
+    Routing instance        VLAN name             Tag          Interfaces
+    default-switch          default               1        
+
+    default-switch          vlan200               200      
+                                                               vtep.32769*
+                                                               xe-0/0/3.0*
+
+
+#### Пинг Client1 ->  Cleint3/4 
+
+root@cli:~# ping 192.168.0.3 
+
+    PING 192.168.0.3 (192.168.0.3) 56(84) bytes of data.
+    64 bytes from 192.168.0.3: icmp_seq=1 ttl=64 time=301 ms
+    64 bytes from 192.168.0.3: icmp_seq=2 ttl=64 time=510 ms
+    64 bytes from 192.168.0.3: icmp_seq=3 ttl=64 time=340 ms
     ^C
-    --- 10.0.255.2 ping statistics ---
-    5 packets transmitted, 5 packets received, 0% packet loss
-    round-trip min/avg/max/stddev = 250.332/376.743/478.673/83.410 ms
+    --- 192.168.0.3 ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 2000ms
+    rtt min/avg/max/mdev = 301.645/384.132/510.282/90.598 ms
 
-root@vQFX-RE-Leaf1> ping 10.0.255.3    
+До Client 4 пинга есть, vlan и VNI совпадают.
 
-    PING 10.0.255.3 (10.0.255.3): 56 data bytes
-    64 bytes from 10.0.255.3: icmp_seq=0 ttl=63 time=399.397 ms
-    64 bytes from 10.0.255.3: icmp_seq=1 ttl=63 time=240.649 ms
-    64 bytes from 10.0.255.3: icmp_seq=2 ttl=63 time=356.099 ms
-    64 bytes from 10.0.255.3: icmp_seq=3 ttl=63 time=354.528 ms
+root@cli:~# ping 192.168.0.4
+
+    PING 192.168.0.4 (192.168.0.4) 56(84) bytes of data.
     ^C
-    --- 10.0.255.3 ping statistics ---
-    4 packets transmitted, 4 packets received, 0% packet loss
-    round-trip min/avg/max/stddev = 240.649/337.668/399.397/58.837 ms
+    --- 192.168.0.4 ping statistics ---
+    2 packets transmitted, 0 received, 100% packet loss, time 1026ms
 
-### Таблица маршрутизации
+До Client 3 пинга нет, как и должно быть VNI не совпадают.
+#### Пинг Client2 ->  Cleint3/4 
 
-root@vQFX-RE-Leaf1> show route 
+root@ubuntu:~# ping 192.168.0.3
 
-    inet.0: 9 destinations, 11 routes (9 active, 0 holddown, 0 hidden)
+    PING 192.168.0.3 (192.168.0.3) 56(84) bytes of data.
+    ^C
+    --- 192.168.0.3 ping statistics ---
+    2 packets transmitted, 0 received, 100% packet loss, time 999ms
+
+До Client 3 пинга нет, как и должно быть VNI не совпадают.
+
+root@ubuntu:~# ping 192.168.0.4
+
+    PING 192.168.0.4 (192.168.0.4) 56(84) bytes of data.
+    64 bytes from 192.168.0.4: icmp_seq=1 ttl=64 time=216 ms
+    64 bytes from 192.168.0.4: icmp_seq=2 ttl=64 time=261 ms
+    64 bytes from 192.168.0.4: icmp_seq=3 ttl=64 time=308 ms
+    ^C
+    --- 192.168.0.4 ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+    rtt min/avg/max/mdev = 216.321/262.051/308.669/37.710 ms
+
+До Client 4 пинг есть, VNI совпадает влан нет.
+
+### evpn database  
+
+root@vQFX-RE-Leaf1> show evpn database   
+
+    Instance: default-switch
+    VLAN  DomainId  MAC address        Active source                  Timestamp        IP address
+         100100     32:9e:e8:0d:24:0e  10.0.255.2                     Jan 17 07:47:58
+         100100     36:d6:92:fe:a6:b1  xe-0/0/3.0                     Jan 17 08:48:58
+         100100     50:43:a7:04:c4:00  10.0.255.2                     Jan 17 08:16:55  192.168.0.3
+         100100     50:67:b9:04:c4:00  10.0.255.2                     Jan 17 07:47:58
+         100100     50:92:20:04:c1:00  xe-0/0/3.0                     Jan 17 08:24:21  192.168.0.1
+         300300     1e:42:e0:1c:07:bc  xe-0/0/4.0                     Jan 17 08:27:07
+         300300     3e:d6:cf:35:c9:90  10.0.255.3                     Jan 18 05:44:21
+         300300     50:51:05:04:c2:00  10.0.255.3                     Jan 18 05:44:21  192.168.0.4
+         300300     50:93:86:04:c3:00  xe-0/0/4.0                     Jan 22 15:57:00  192.168.0.2
+
+### Таблица маршрутизации (Оставлены только EVPN+VxLAN таблицы)
+
+    :vxlan.inet.0: 9 destinations, 9 routes (9 active, 0 holddown, 0 hidden)
     + = Active Route, - = Last Active, * = Both
 
-    10.0.1.0/31        *[Direct/0] 3w6d 09:46:30
+    10.0.1.0/31        *[Direct/0] 6d 23:28:40
                         >  via xe-0/0/1.0
-    10.0.1.0/32        *[Local/0] 3w6d 09:46:30
-                           Local via xe-0/0/1.0
-    10.0.2.0/31        *[Direct/0] 4w6d 02:22:50
+    10.0.1.0/32        *[Local/0] 6d 23:28:40
+                          Local via xe-0/0/1.0
+    10.0.2.0/31        *[Direct/0] 6d 23:28:40
                         >  via xe-0/0/2.0
-    10.0.2.0/32        *[Local/0] 4w6d 02:22:50
-                           Local via xe-0/0/2.0
-    10.0.255.1/32      *[Direct/0] 1d 08:36:16
+    10.0.2.0/32        *[Local/0] 6d 23:28:40
+                          Local via xe-0/0/2.0
+    10.0.255.1/32      *[Direct/0] 6d 23:28:40
                         >  via lo0.0
-    10.0.255.2/32      *[BGP/170] 02:17:58, localpref 100, from 10.0.2.1
-                          AS path: 65000 65002 I, validation-state: unverified
+    10.0.255.2/32      *[Static/1] 6d 23:06:55, metric2 0
                         >  to 10.0.1.1 via xe-0/0/1.0
-                           to 10.0.2.1 via xe-0/0/2.0
-                        [BGP/170] 02:17:58, localpref 100
-                          AS path: 65000 65002 I, validation-state: unverified
+                          to 10.0.2.1 via xe-0/0/2.0
+    10.0.255.3/32      *[Static/1] 4d 10:22:39, metric2 0
                         >  to 10.0.1.1 via xe-0/0/1.0
-    10.0.255.3/32      *[BGP/170] 02:16:33, localpref 100
-                          AS path: 65000 65003 I, validation-state: unverified
+                          to 10.0.2.1 via xe-0/0/2.0
+    169.254.0.0/24     *[Direct/0] 6d 23:28:40
+                        >  via em1.0
+    169.254.0.2/32     *[Local/0] 6d 23:28:40
+                          Local via em1.0
+
+    bgp.evpn.0: 17 destinations, 26 routes (17 active, 0 holddown, 0 hidden)
+    + = Active Route, - = Last Active, * = Both
+
+    2:10.0.255.1:65000::100100::36:d6:92:fe:a6:b1/304 MAC/IP        
+                      *[EVPN/170] 5d 07:18:02
+                          Indirect
+    2:10.0.255.1:65000::100100::50:92:20:04:c1:00/304 MAC/IP        
+                      *[EVPN/170] 5d 07:42:47
+                          Indirect
+    2:10.0.255.1:65000::300300::1e:42:e0:1c:07:bc/304 MAC/IP        
+                      *[EVPN/170] 5d 07:39:53
+                          Indirect
+    2:10.0.255.1:65000::300300::50:93:86:04:c3:00/304 MAC/IP        
+                      *[EVPN/170] 5d 07:42:20
+                          Indirect
+    2:10.0.255.2:65000::100100::32:9e:e8:0d:24:0e/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
                         >  to 10.0.1.1 via xe-0/0/1.0
-                           to 10.0.2.1 via xe-0/0/2.0
-                        [BGP/170] 02:16:33, localpref 100
-                          AS path: 65000 65003 I, validation-state: unverified
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.2:65000::100100::50:43:a7:04:c4:00/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.2:65000::100100::50:67:b9:04:c4:00/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.3:65000::300300::3e:d6:cf:35:c9:90/304 MAC/IP        
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.3:65000::300300::50:51:05:04:c2:00/304 MAC/IP        
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.1:65000::100100::50:92:20:04:c1:00::192.168.0.1/304 MAC/IP        
+                      *[EVPN/170] 5d 07:42:39
+                          Indirect
+    2:10.0.255.1:65000::300300::50:93:86:04:c3:00::192.168.0.2/304 MAC/IP        
+                      *[EVPN/170] 00:09:59
+                          Indirect
+    2:10.0.255.2:65000::100100::50:43:a7:04:c4:00::192.168.0.3/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.3:65000::300300::50:51:05:04:c2:00::192.168.0.4/304 MAC/IP        
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    3:10.0.255.1:65000::100100::10.0.255.1/248 IM            
+                      *[EVPN/170] 6d 23:28:41
+                          Indirect
+    3:10.0.255.1:65000::300300::10.0.255.1/248 IM            
+                      *[EVPN/170] 5d 07:58:07
+                          Indirect
+    3:10.0.255.2:65000::100100::10.0.255.2/248 IM            
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    3:10.0.255.3:65000::300300::10.0.255.3/248 IM            
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
 
-Балансировка работает
+    default-switch.evpn.0: 17 destinations, 26 routes (17 active, 0 holddown, 0 hidden)
+    + = Active Route, - = Last Active, * = Both
 
-root@vQFX-RE-Leaf1> show route forwarding-table 
-
-    Routing table: default.inet
-    Internet:
-    Enabled protocols: Bridging, 
-    Destination        Type RtRef Next hop           Type Index    NhRef Netif
-    default            perm     0                    rjct       51     1
-    0.0.0.0/32         perm     0                    dscd       49     1
-    10.0.1.0/31        intf     0                    rslv     1731     1 xe-0/0/1.0
-    10.0.1.0/32        intf     0 10.0.1.0           locl     1730     2
-    10.0.1.0/32        dest     0 10.0.1.0           locl     1730     2
-    10.0.1.1/32        dest     1 2:5:86:71:cd:7     ucst     1734     4 xe-0/0/1.0
-    10.0.2.0/31        intf     0                    rslv     1733     1 xe-0/0/2.0
-    10.0.2.0/32        intf     0 10.0.2.0           locl     1732     2
-    10.0.2.0/32        dest     0 10.0.2.0           locl     1732     2
-    10.0.2.1/32        dest     1 2:5:86:71:2d:7     ucst     1735     4 xe-0/0/2.0
-    10.0.255.1/32      intf     0 10.0.255.1         locl     1700     1
-    10.0.255.2/32      user     0                    ulst   131070     3
-                                  10.0.1.1           ucst     1734     4 xe-0/0/1.0
-                                  10.0.2.1           ucst     1735     4 xe-0/0/2.0
-    10.0.255.3/32      user     0                    ulst   131070     3
-                                  10.0.1.1           ucst     1734     4 xe-0/0/1.0
-                                  10.0.2.1           ucst     1735     4 xe-0/0/2.0
-    169.254.0.0/24     intf     0                    rslv      323     1 em1.0
-    169.254.0.0/32     dest     0 169.254.0.0        recv      321     1 em1.0
-    169.254.0.1/32     dest     1 50:8e:bc:4:74:1    ucst      340     2 em1.0
-    169.254.0.2/32     intf     0 169.254.0.2        locl      322     2
-    169.254.0.2/32     dest     0 169.254.0.2        locl      322     2
-    169.254.0.255/32   dest     0 169.254.0.255      bcst      320     1 em1.0
-    224.0.0.0/4        perm     0                    mdsc       50     1
-    224.0.0.1/32       perm     0 224.0.0.1          mcst       46     1
-    255.255.255.255/32 perm     0                    bcst       47     
+    2:10.0.255.1:65000::100100::36:d6:92:fe:a6:b1/304 MAC/IP        
+                      *[EVPN/170] 5d 07:18:02
+                          Indirect
+    2:10.0.255.1:65000::100100::50:92:20:04:c1:00/304 MAC/IP        
+                      *[EVPN/170] 5d 07:42:47
+                          Indirect
+    2:10.0.255.1:65000::300300::1e:42:e0:1c:07:bc/304 MAC/IP        
+                      *[EVPN/170] 5d 07:39:53
+                          Indirect
+    2:10.0.255.1:65000::300300::50:93:86:04:c3:00/304 MAC/IP        
+                      *[EVPN/170] 5d 07:42:20
+                          Indirect
+    2:10.0.255.2:65000::100100::32:9e:e8:0d:24:0e/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.2:65000::100100::50:43:a7:04:c4:00/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.2:65000::100100::50:67:b9:04:c4:00/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.3:65000::300300::3e:d6:cf:35:c9:90/304 MAC/IP        
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.3:65000::300300::50:51:05:04:c2:00/304 MAC/IP        
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.1:65000::100100::50:92:20:04:c1:00::192.168.0.1/304 MAC/IP        
+                      *[EVPN/170] 5d 07:42:39
+                          Indirect
+    2:10.0.255.1:65000::300300::50:93:86:04:c3:00::192.168.0.2/304 MAC/IP        
+                      *[EVPN/170] 00:09:59 
+                          Indirect
+    2:10.0.255.2:65000::100100::50:43:a7:04:c4:00::192.168.0.3/304 MAC/IP        
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    2:10.0.255.3:65000::300300::50:51:05:04:c2:00::192.168.0.4/304 MAC/IP        
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+    3:10.0.255.1:65000::100100::10.0.255.1/248 IM            
+                      *[EVPN/170] 6d 23:28:41
+                          Indirect
+    3:10.0.255.1:65000::300300::10.0.255.1/248 IM            
+                      *[EVPN/170] 5d 07:58:07
+                          Indirect
+    3:10.0.255.2:65000::100100::10.0.255.2/248 IM            
+                      *[BGP/170] 08:29:42, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 02:15:56, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                        >  to 10.0.1.1 via xe-0/0/1.0
+                          to 10.0.2.1 via xe-0/0/2.0
+    3:10.0.255.3:65000::300300::10.0.255.3/248 IM            
+                      *[BGP/170] 17:08:20, localpref 100, from 10.0.0.1
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
+                        [BGP/170] 04:05:07, localpref 100, from 10.0.0.2
+                          AS path: I, validation-state: unverified
+                          to 10.0.1.1 via xe-0/0/1.0
+                        >  to 10.0.2.1 via xe-0/0/2.0
 
 ## Выполнение Cisco
+
 
 Добавление конфигурации BGP, BFD
 Для всех Leaf одинаковая (Кроме autonomous-system и ip neighbor)
