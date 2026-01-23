@@ -199,7 +199,7 @@ root@vQFX-RE-****Spine2****> show bgp summary
 
 ### Вывод по vlan
 
-root@vQFX-RE-******Leaf1**> show vlans brief    
+root@vQFX-RE-**Leaf1**> show vlans brief    
 
     Routing instance        VLAN name             Tag          Interfaces
     default-switch          default               1        
@@ -570,7 +570,7 @@ feature nv overlay
      address-family l2vpn evpn  
       + send-community  
        send-community extended  
-       rewrite-evpn-rt-asn  - ***Эта команда не нужна на leaf ихсходя из уроков и описанию, но иначе mac адреса не прилетают***  
+       rewrite-evpn-rt-asn
   + template peer UNDERLAY_EBGP  
     + remote-as 65000  
       timers 3 9  
