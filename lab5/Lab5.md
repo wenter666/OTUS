@@ -640,18 +640,18 @@ feature nv overlay
     log-neighbor-changes  
     address-family ipv4 unicast      
       + maximum-paths 2   
-        redistribute direct route-map EXPORT-Loopback  
+        redistribute direct route-map EXPORT-Loopback   
   + address-family l2vpn evpn  
     + maximum-paths 2  
-  + template peer OVERLAY_EVPN-VxLAN  
-    + update-source loopback0  
-      ebgp-multihop 2  
-      address-family l2vpn evpn
-      + send-community
-        send-community extended
-        route-map NH_UNCHANGED out
-        rewrite-evpn-rt-asn
-  + neighbor 10.0.255.1
+  + template peer OVERLAY_EVPN-VxLAN    
+    + update-source loopback0    
+      ebgp-multihop 2    
+      address-family l2vpn evpn  
+      + send-community  
+        send-community extended  
+        route-map NH_UNCHANGED out  
+        rewrite-evpn-rt-asn  
+  + neighbor 10.0.255.1  
     + inherit peer OVERLAY_EVPN-VxLAN
       remote-as 65001
   + neighbor 10.0.255.2
