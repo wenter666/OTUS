@@ -537,18 +537,19 @@ root@vQFX-RE-Leaf1> show evpn database
 
 ## Выполнение Cisco (Не успешно)
 
-2026 Jan 22 23:05:56 switch %$ VDC-1 %$ nve[8159]: Module 1 is not 'feature nv overlay' capable. 'feature nve overlay' requires application leaf engine' (ALE) 1 or above based line cards. Please consult documentation.
+Вышла ошибка:
+***2026 Jan 22 23:05:56 switch %$ VDC-1 %$ nve[8159]: Module 1 is not 'feature nv overlay' capable. 'feature nve overlay' requires application leaf engine' (ALE) 1 or above based line cards. Please consult documentation.***
 
 Оформлю ДЗ, но в след раз возможно перейду на Аристу, к сожалению других образов cisco Nexus9000 у меня нет и возможности загрузить тоже.
 
 Добавление конфигурации BGP EVPN, VxLAN
 Для всех Leaf одинаковая (Кроме autonomous-system и ip neighbor, RD/RT)
 
-+ nv overlay evpn
-feature bgp
-feature vn-segment-vlan-based
-feature bfd
-feature nv overlay
++ nv overlay evpn  
+feature bgp  
+feature vn-segment-vlan-based  
+feature bfd  
+feature nv overlay  
 
 
 + router bgp 65001  
@@ -597,10 +598,10 @@ feature nv overlay
 
 + vlan 100  
   + name VLAN100  
-  + vn-segment 100100  
+    vn-segment 100100  
 + vlan 300  
   + name VLAN300  
-  + vn-segment 300300  
+     vn-segment 300300  
 
 Настройка nve 
 
@@ -609,9 +610,9 @@ feature nv overlay
     host-reachability protocol bgp  
     source-interface loopback100  
     member vni 100100  
-    + ingress-replication protocol bgp  
+    ingress-replication protocol bgp  
     member vni 300300  
-    + ingress-replication protocol bgp  
+    ingress-replication protocol bgp  
 
 
 #### Политика для распространения lo 
@@ -659,8 +660,7 @@ feature nv overlay
   + neighbor 10.0.255.3
     + inherit peer OVERLAY_EVPN-VxLAN
       remote-as 65003
-  + neighbor 10.0.0.0/22 remote-as route-map AS-LEAF  
-    bfd  
+  + neighbor 10.0.0.0/22 remote-as route-map AS-LEAF 
     address-family ipv4 unicast  
 + route-map AS-LEAF permit 10  
    match as-number 65001-65100 
@@ -746,7 +746,8 @@ NXOS-Leaf1# sh bgp l2vpn evpn
 
 Выводы по NVE интерфейсу на LEAF1 (на других аналогично)
 
-NXOS-Leaf1# sh nve vni  
+NXOS-Leaf1# sh nve vni 
+
     Codes: CP - Control Plane        DP - Data Plane          
           UC - Unconfigured         SA - Suppress ARP        
           SU - Suppress Unknown Unicast 
@@ -759,15 +760,44 @@ NXOS-Leaf1# sh nve vni
     nve1      300300   UnicastBGP        Up    CP   L2 [300]                
 
 NXOS-Leaf1# sh interface  nve 1
-nve1 is up
-admin state is up,  Hardware: NVE
-  MTU 9216 bytes
-  Encapsulation VXLAN
-  Auto-mdix is turned off
-  RX
-    ucast: 0 pkts, 0 bytes - mcast: 0 pkts, 0 bytes
-  TX
-    ucast: 0 pkts, 0 bytes - mcast: 0 pkts, 0 bytes
+
+    nve1 is up
+    admin state is up,  Hardware: NVE
+      MTU 9216 bytes
+      Encapsulation VXLAN
+      Auto-mdix is turned off
+      RX
+        ucast: 0 pkts, 0 bytes - mcast: 0 pkts, 0 bytes
+      TX
+        ucast: 0 pkts, 0 bytes - mcast: 0 pkts, 0 bytes
 
 
 NXOS-Leaf1# sh nve peers --- ***Туннелей нет***
+
+Пинги для Lo100 сделанных для туннелей проходят.
+
+NXOS-Leaf1# ping 10.255.255.2
+
+    PING 10.255.255.2 (10.255.255.2): 56 data bytes
+    64 bytes from 10.255.255.2: icmp_seq=0 ttl=253 time=17.331 ms
+    64 bytes from 10.255.255.2: icmp_seq=1 ttl=253 time=5.513 ms
+    64 bytes from 10.255.255.2: icmp_seq=2 ttl=253 time=4.598 ms
+    64 bytes from 10.255.255.2: icmp_seq=3 ttl=253 time=6.1 ms
+    64 bytes from 10.255.255.2: icmp_seq=4 ttl=253 time=9.579 ms
+
+    --- 10.255.255.2 ping statistics ---
+    5 packets transmitted, 5 packets received, 0.00% packet loss
+    round-trip min/avg/max = 4.598/8.624/17.331 ms
+
+NXOS-Leaf1# ping 10.255.255.3
+
+    PING 10.255.255.3 (10.255.255.3): 56 data bytes
+    64 bytes from 10.255.255.3: icmp_seq=0 ttl=253 time=24.319 ms
+    64 bytes from 10.255.255.3: icmp_seq=1 ttl=253 time=13.326 ms
+    64 bytes from 10.255.255.3: icmp_seq=2 ttl=253 time=3.936 ms
+    64 bytes from 10.255.255.3: icmp_seq=3 ttl=253 time=3.434 ms
+    64 bytes from 10.255.255.3: icmp_seq=4 ttl=253 time=8.419 ms
+
+    --- 10.255.255.3 ping statistics ---
+    5 packets transmitted, 5 packets received, 0.00% packet loss
+    round-trip min/avg/max = 3.434/10.686/24.319 ms
