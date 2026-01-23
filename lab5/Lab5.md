@@ -535,32 +535,84 @@ root@vQFX-RE-Leaf1> show evpn database
                           to 10.0.1.1 via xe-0/0/1.0
                         >  to 10.0.2.1 via xe-0/0/2.0
 
-## Выполнение Cisco
+## Выполнение Cisco (Не успешно)
+
+2026 Jan 22 23:05:56 switch %$ VDC-1 %$ nve[8159]: Module 1 is not 'feature nv overlay' capable. 'feature nve overlay' requires application leaf engine' (ALE) 1 or above based line cards. Please consult documentation.
+
+Оформлю ДЗ, но в след раз возможно перейду на Аристу, к сожалению других образов cisco Nexus9000 у меня нет и возможности загрузить тоже.
+
+Добавление конфигурации BGP EVPN, VxLAN
+Для всех Leaf одинаковая (Кроме autonomous-system и ip neighbor, RD/RT)
+
++ nv overlay evpn
+feature bgp
+feature vn-segment-vlan-based
+feature bfd
+feature nv overlay
 
 
-Добавление конфигурации BGP, BFD
-Для всех Leaf одинаковая (Кроме autonomous-system и ip neighbor)
-
-+ feature bgp  
 + router bgp 65001  
    + router-id 10.0.255.1  
-  reconnect-interval 12  
-  log-neighbor-changes  
+  bestpath as-path multipath-relax
+  reconnect-interval 12
+  log-neighbor-changes
+  address-family l2vpn evpn
+    + maximum-paths 2  
+      retain route-target all - ***Эта команда не нужна на leaf ихсходя из уроков и описанию, но иначе mac адреса не прилетают***  
   address-family ipv4 unicast  
-     + redistribute direct route-map EXPORT-Loopback  
-       maximum-paths 2  
-  + template peer SPINE  
-     + bfd  
-    remote-as 65000  
-    timers 3 9  
-    address-family ipv4 unicast  
+     + redistribute direct route-map EXPORT-Loopback    
+       maximum-paths 2
+  + template peer OVERLAY_EVPN-VxLAN
+    + remote-as 65000
+     ebgp-multihop 2
+     timers 3 9
+     address-family l2vpn evpn  
+      + send-community  
+       send-community extended  
+       rewrite-evpn-rt-asn  - ***Эта команда не нужна на leaf ихсходя из уроков и описанию, но иначе mac адреса не прилетают***  
+  + template peer UNDERLAY_EBGP  
+    + remote-as 65000  
+      timers 3 9  
+      address-family ipv4 unicast  
+  + neighbor 10.0.1.1
+    + inherit peer UNDERLAY_EBGP
+  + neighbor 10.0.2.1
+    + inherit peer UNDERLAY_EBGP   
   + neighbor 10.0.1.1  
      + inherit peer SPINE  
   + neighbor 10.0.2.1  
      + inherit peer SPINE 
 
-+ feature bfd  
-bfd interval 300 min_rx 300 multiplier 3 
++ evpn  
+  + vni 100100 l2  
+    + rd auto  
+     route-target import 65000:100100  
+     route-target export 65000:100100  
+  + vni 300300 l2  
+    + rd auto  
+     route-target import 65000:300300  
+     route-target export 65000:300300  
+
+Настройка vlan
+
++ vlan 100  
+  + name VLAN100  
+  + vn-segment 100100  
++ vlan 300  
+  + name VLAN300  
+  + vn-segment 300300  
+
+Настройка nve 
+
++ interface nve1  
+  + no shutdown  
+    host-reachability protocol bgp  
+    source-interface loopback100  
+    member vni 100100  
+    + ingress-replication protocol bgp  
+    member vni 300300  
+    + ingress-replication protocol bgp  
+
 
 #### Политика для распространения lo 
 
@@ -568,176 +620,154 @@ bfd interval 300 min_rx 300 multiplier 3
   match ip address prefix-list Looback_for_BGP 
 
 + ip prefix-list Looback_for_BGP seq 5 permit 10.0.255.0/24 eq 32 
-
++ ip prefix-list Looback_for_BGP seq 10 permit 10.255.255.0/24 eq 32 
 
 Для всех Spine одинаковая (Кроме autonomous-system и ip neighbor):
 
-#### Общие настройки BGP, BFD
+#### Общие настройки  BGP EVPN
 
 
 + feature bgp
+  feature vn-segment-vlan-based
+  feature nv overlay
+  nv overlay evpn
 
-+ router bgp 65000  
++ router bgp 65000    
   + router-id 10.0.0.1  
-  reconnect-interval 12  
-  log-neighbor-changes  
-  address-family ipv4 unicast  
-    + maximum-paths 2  
+    bestpath as-path multipath-relax  
+    reconnect-interval 12  
+    log-neighbor-changes  
+    address-family ipv4 unicast    
+      + maximum-paths 2 
+        redistribute direct route-map EXPORT-Loopback
+  + address-family l2vpn evpn
+    + maximum-paths 2
+  + template peer OVERLAY_EVPN-VxLAN
+    + update-source loopback0
+      ebgp-multihop 2
+      address-family l2vpn evpn
+      + send-community
+        send-community extended
+        route-map NH_UNCHANGED out
+        rewrite-evpn-rt-asn
+  + neighbor 10.0.255.1
+    + inherit peer OVERLAY_EVPN-VxLAN
+      remote-as 65001
+  + neighbor 10.0.255.2
+    + inherit peer OVERLAY_EVPN-VxLAN
+      remote-as 65002
+  + neighbor 10.0.255.3
+    + inherit peer OVERLAY_EVPN-VxLAN
+      remote-as 65003
   + neighbor 10.0.0.0/22 remote-as route-map AS-LEAF  
     bfd  
     address-family ipv4 unicast  
 + route-map AS-LEAF permit 10  
    match as-number 65001-65100 
 
-+ feature bfd  
-bfd interval 300 min_rx 300 multiplier 3
+### Состояние BGP EVPN (на SPINE)
 
-### Состояние BGP, BFD
+NXOS-Spine1# sh bgp l2vpn evpn summary 
 
-NXOS-**Leaf1** sh bgp  sessions 
+    BGP summary information for VRF default, address family L2VPN EVPN
+    BGP router identifier 10.0.0.1, local AS number 65000
+    BGP table version is 249, L2VPN EVPN config peers 3, capable peers 3
+    11 network entries and 11 paths using 2684 bytes of memory
+    BGP attribute entries [8/1376], BGP AS path entries [3/18]
+    BGP community entries [0/0], BGP clusterlist entries [0/0]
 
-    Total peers 2, established peers 2
-    ASN 65001
-    VRF default, local ASN 65001
-    peers 2, established peers 2, local router-id 10.0.255.1
-    State: I-Idle, A-Active, O-Open, E-Established, C-Closing, S-Shutdown
+    Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+    10.0.255.1      4 65001   15241   15197      249    0    0 09:57:21 6         
+    10.0.255.2      4 65002   14817   14812      249    0    0 09:58:29 2         
+    10.0.255.3      4 65003   15236   15224      249    0    0 09:59:22 3         
+    NXOS-Spine1# 
 
-    Neighbor        ASN    Flaps LastUpDn|LastRead|LastWrit St Port(L/R)  Notif(S/R)
-    10.0.1.1        65000 2     1d02h   |00:00:01|00:00:01 E   44079/179        2/0
-    10.0.2.1        65000 0     1d03h   |0.622182|00:00:01 E   47041/179        0/0   
+NXOS-Spine2# sh bgp l2vpn evpn summary 
 
+    BGP summary information for VRF default, address family L2VPN EVPN
+    BGP router identifier 10.0.0.2, local AS number 65000
+    BGP table version is 243, L2VPN EVPN config peers 3, capable peers 3
+    11 network entries and 11 paths using 2684 bytes of memory
+    BGP attribute entries [8/1376], BGP AS path entries [3/18]
+    BGP community entries [0/0], BGP clusterlist entries [0/0]
 
-NXOS-**Leaf2**# sh bgp  sessions 
+    Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+    10.0.255.1      4 65001   14789   14737      243    0    0 09:58:19 6         
+    10.0.255.2      4 65002   14374   14368      243    0    0 10:00:20 2         
+    10.0.255.3      4 65003   14812   14802      243    0    0 10:01:10 3    
 
-    Total peers 2, established peers 2
-    ASN 65002
-    VRF default, local ASN 65002
-    peers 2, established peers 2, local router-id 10.0.255.2
-    State: I-Idle, A-Active, O-Open, E-Established, C-Closing, S-Shutdown
+Мак адреса на LEAF1 (на других аналогично):
 
-    Neighbor        ASN    Flaps LastUpDn|LastRead|LastWrit St Port(L/R)  Notif(S/R)
-    10.0.1.3        65000 0     1d03h   |0.511890|00:00:02 E   41254/179        0/0
-    10.0.2.3        65000 0     1d03h   |00:00:02|00:00:02 E   16702/179        0/0
+NXOS-Leaf1# sh bgp l2vpn evpn
 
+    BGP routing table information for VRF default, address family L2VPN EVPN
+    BGP table version is 246, Local Router ID is 10.0.255.1
+    Status: s-suppressed, x-deleted, S-stale, d-dampened, h-history, *-valid, >-best
+    Path type: i-internal, e-external, c-confed, l-local, a-aggregate, r-redist, I-i
+    njected
+    Origin codes: i - IGP, e - EGP, ? - incomplete, | - multipath, & - backup, 2 - b
+    est2
 
-NXOS-**Leaf3**# sh bgp sessions 
+      Network            Next Hop            Metric     LocPrf     Weight Path
+    Route Distinguisher: 10.0.255.1:32867    (L2VNI 100100)
+    *>l[2]:[0]:[0]:[48]:[50ad.c904.8600]:[0]:[0.0.0.0]/216
+                          10.255.255.1                      100      32768 i
+    *>l[2]:[0]:[0]:[48]:[52f0.9b60.5e42]:[0]:[0.0.0.0]/216
+                          10.255.255.1                      100      32768 i
+    *>l[3]:[0]:[32]:[10.255.255.1]/88
+                          10.255.255.1                      100      32768 i
 
-    Total peers 2, established peers 2
-    ASN 65003
-    VRF default, local ASN 65003
-    peers 2, established peers 2, local router-id 10.0.255.3
-    State: I-Idle, A-Active, O-Open, E-Established, C-Closing, S-Shutdown
+    Route Distinguisher: 10.0.255.1:33067    (L2VNI 300300)
+    *>l[2]:[0]:[0]:[48]:[3640.7e89.fc1c]:[0]:[0.0.0.0]/216
+                          10.255.255.1                      100      32768 i
+    *>l[2]:[0]:[0]:[48]:[504b.b204.8700]:[0]:[0.0.0.0]/216
+                          10.255.255.1                      100      32768 i
+    *>l[3]:[0]:[32]:[10.255.255.1]/88
+                          10.255.255.1                      100      32768 i
 
-    Neighbor        ASN    Flaps LastUpDn|LastRead|LastWrit St Port(L/R)  Notif(S/R)
-    10.0.1.5        65000 0     1d03h   |00:00:01|0.067959 E   28599/179        0/0
-    10.0.2.5        65000 0     1d03h   |0.008743|0.069454 E   39301/179        0/0
+    Route Distinguisher: 10.0.255.2:32867
+    *>e[2]:[0]:[0]:[48]:[50fd.1804.8800]:[0]:[0.0.0.0]/216
+                          10.255.255.2                                   0 65000 650
+    02 i
+    *>e[3]:[0]:[32]:[10.255.255.2]/88
+                          10.255.255.2                                   0 65000 650
+    02 i
 
+    Route Distinguisher: 10.0.255.3:32967
+    *>e[2]:[0]:[0]:[48]:[1ec6.cc98.bff6]:[0]:[0.0.0.0]/216
+                          10.255.255.3                                   0 65000 650
+    03 i
+    *>e[2]:[0]:[0]:[48]:[500c.a004.8900]:[0]:[0.0.0.0]/216
+                          10.255.255.3                                   0 65000 650
+    03 i
+    *>e[3]:[0]:[32]:[10.255.255.3]/88
+                          10.255.255.3                                   0 65000 650
+    03 i
 
-NXOS-**Spine1**# sh bgp sessions 
+Выводы по NVE интерфейсу на LEAF1 (на других аналогично)
 
-    Total peers 3, established peers 3
-    ASN 65000
-    VRF default, local ASN 65000
-    peers 3, established peers 3, local router-id 10.0.0.1
-    State: I-Idle, A-Active, O-Open, E-Established, C-Closing, S-Shutdown
+NXOS-Leaf1# sh nve vni  
+    Codes: CP - Control Plane        DP - Data Plane          
+          UC - Unconfigured         SA - Suppress ARP        
+          SU - Suppress Unknown Unicast 
+          Xconn - Crossconnect      
+          MS-IR - Multisite Ingress Replication
+    
+    Interface VNI      Multicast-group   State Mode Type [BD/VRF]      Flags
+    --------- -------- ----------------- ----- ---- ------------------ -----
+    nve1      100100   UnicastBGP        Up    CP   L2 [100]                
+    nve1      300300   UnicastBGP        Up    CP   L2 [300]                
 
-    Neighbor        ASN    Flaps LastUpDn|LastRead|LastWrit St Port(L/R)  Notif(S/R)
-    10.0.1.0        65001 0     1d02h   |00:00:02|0.322892 E   179/44079      0/0
-    10.0.1.2        65002 0     1d03h   |00:00:02|0.322992 E   179/41254      0/0
-    10.0.1.4        65003 0     1d03h   |00:00:02|0.323061 E   179/28599      0/0
-
-NXOS-**Spine2**# sh bgp  sessions 
-
-    Total peers 3, established peers 3
-    ASN 65000
-    VRF default, local ASN 65000
-    peers 3, established peers 3, local router-id 10.0.0.2
-    State: I-Idle, A-Active, O-Open, E-Established, C-Closing, S-Shutdown
-
-    Neighbor        ASN    Flaps LastUpDn|LastRead|LastWrit St Port(L/R)  Notif(S/R)
-    10.0.2.0        65001 0     1d03h   |00:00:01|0.717002 E   179/47041      0/0
-    10.0.2.2        65002 0     1d03h   |0.960260|0.717128 E   179/16702      0/0
-    10.0.2.4        65003 0     1d03h   |0.774557|0.717182 E   179/39301      0/0
-
-_К сожалению поднять bfd на cisco не вышло, после перебора всех возможных видов конфигураций и отсутвие каких-либо пакетов в дампе, сделал вывод, что проблема в виртуализации._
-
-NXOS-Spine1# sh bfd neighbors 
-
-    OurAddr         NeighAddr       LD/RD                 RH/RS           Holdown(mu
-    lt)     State       Int                   Vrf                              Type 
-
-    10.0.1.3        10.0.1.2        1090519045/0          Down            N/A(3)    
-            Down        Eth1/2                default                          SH   
-
-    10.0.1.5        10.0.1.4        1090519046/0          Down            N/A(3)    
-            Down        Eth1/3                default                          SH   
-
-    10.0.1.1        10.0.1.0        1090519049/0          Down            N/A(3)    
-            Down        Eth1/1                default                          SH   
-
-
-Пинг Leaf 1 -> Leaf 2/3
-
-NXOS-Leaf1# ping 10.0.255.2 source 10.0.255.1
-
-    PING 10.0.255.2 (10.0.255.2) from 10.0.255.1: 56 data bytes
-    64 bytes from 10.0.255.2: icmp_seq=0 ttl=253 time=40.745 ms
-    64 bytes from 10.0.255.2: icmp_seq=1 ttl=253 time=9.82 ms
-    64 bytes from 10.0.255.2: icmp_seq=2 ttl=253 time=9.552 ms
-    64 bytes from 10.0.255.2: icmp_seq=3 ttl=253 time=6.972 ms
-    64 bytes from 10.0.255.2: icmp_seq=4 ttl=253 time=8.444 ms
-
-    --- 10.0.255.2 ping statistics ---
-    5 packets transmitted, 5 packets received, 0.00% packet loss
-    round-trip min/avg/max = 6.972/15.106/40.745 ms
-
-NXOS-Leaf1# ping 10.0.255.3 source 10.0.255.1
-
-    PING 10.0.255.3 (10.0.255.3) from 10.0.255.1: 56 data bytes
-    64 bytes from 10.0.255.3: icmp_seq=0 ttl=253 time=15.116 ms
-    64 bytes from 10.0.255.3: icmp_seq=1 ttl=253 time=7.173 ms
-    64 bytes from 10.0.255.3: icmp_seq=2 ttl=253 time=10.451 ms
-    64 bytes from 10.0.255.3: icmp_seq=3 ttl=253 time=8.42 ms
-    64 bytes from 10.0.255.3: icmp_seq=4 ttl=253 time=10.286 ms
-
-    --- 10.0.255.3 ping statistics ---
-    5 packets transmitted, 5 packets received, 0.00% packet loss
-    round-trip min/avg/max = 7.173/10.289/15.116 ms
+NXOS-Leaf1# sh interface  nve 1
+nve1 is up
+admin state is up,  Hardware: NVE
+  MTU 9216 bytes
+  Encapsulation VXLAN
+  Auto-mdix is turned off
+  RX
+    ucast: 0 pkts, 0 bytes - mcast: 0 pkts, 0 bytes
+  TX
+    ucast: 0 pkts, 0 bytes - mcast: 0 pkts, 0 bytes
 
 
-ECMP на NEXUS включён по дефолту
-
-NXOS-Leaf1# sh forwarding 10.0.255.1 detail        
-
-    Prefix 10.0.255.2/32, No of paths: 2, Update time: Mon Jan 12 13:03:18 2026
-       Vobj id: 8   Partial Install: No
-       10.0.1.1                                  Ethernet1/1         
-       10.0.2.1                                  Ethernet1/2         
-
-#### Таблица маршрутизации
-
-NXOS-Leaf1# sh ip route 
-
-    IP Route Table for VRF "default"
-    '*' denotes best ucast next-hop
-    '**' denotes best mcast next-hop
-    '[x/y]' denotes [preference/metric]
-    '%<string>' in via output denotes VRF <string>
-
-    10.0.1.0/31, ubest/mbest: 1/0, attached
-        *via 10.0.1.0, Eth1/1, [0/0], 1d02h, direct
-    10.0.1.0/32, ubest/mbest: 1/0, attached
-        *via 10.0.1.0, Eth1/1, [0/0], 1d02h, local
-    10.0.2.0/31, ubest/mbest: 1/0, attached
-        *via 10.0.2.0, Eth1/2, [0/0], 3d00h, direct
-    10.0.2.0/32, ubest/mbest: 1/0, attached
-        *via 10.0.2.0, Eth1/2, [0/0], 3d00h, local
-    10.0.255.1/32, ubest/mbest: 2/0, attached
-        *via 10.0.255.1, Lo0, [0/0], 4w6d, local
-        *via 10.0.255.1, Lo0, [0/0], 4w6d, direct
-    10.0.255.2/32, ubest/mbest: 2/0
-        *via 10.0.1.1, [20/0], 1d02h, bgp-65001, external, tag 65000
-        *via 10.0.2.1, [20/0], 1d03h, bgp-65001, external, tag 65000
-    10.0.255.3/32, ubest/mbest: 2/0
-        *via 10.0.1.1, [20/0], 1d02h, bgp-65001, external, tag 65000
-        *via 10.0.2.1, [20/0], 1d03h, bgp-65001, external, tag 65000
+NXOS-Leaf1# sh nve peers --- ***Туннелей нет***
