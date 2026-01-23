@@ -561,10 +561,10 @@ feature nv overlay
     + maximum-paths 2  
       retain route-target all - ***Эта команда не нужна на leaf ихсходя из уроков и описанию, но иначе mac адреса не прилетают***  
   address-family ipv4 unicast  
-     + redistribute direct route-map EXPORT-Loopback    
-       maximum-paths 2
-  + template peer OVERLAY_EVPN-VxLAN
-    + remote-as 65000
+     + redistribute direct route-map EXPORT-Loopback      
+       maximum-paths 2  
+  + template peer OVERLAY_EVPN-VxLAN    
+    + remote-as 65000  
      ebgp-multihop 2
      timers 3 9
      address-family l2vpn evpn  
@@ -638,14 +638,14 @@ feature nv overlay
     bestpath as-path multipath-relax  
     reconnect-interval 12  
     log-neighbor-changes  
-    address-family ipv4 unicast    
-      + maximum-paths 2 
-        redistribute direct route-map EXPORT-Loopback
-  + address-family l2vpn evpn
-    + maximum-paths 2
-  + template peer OVERLAY_EVPN-VxLAN
-    + update-source loopback0
-      ebgp-multihop 2
+    address-family ipv4 unicast      
+      + maximum-paths 2   
+        redistribute direct route-map EXPORT-Loopback  
+  + address-family l2vpn evpn  
+    + maximum-paths 2  
+  + template peer OVERLAY_EVPN-VxLAN  
+    + update-source loopback0  
+      ebgp-multihop 2  
       address-family l2vpn evpn
       + send-community
         send-community extended
