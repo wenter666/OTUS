@@ -297,7 +297,7 @@ root@vQFX-RE-Leaf1> show route table __default_evpn__.evpn.0
       vxlan vrf Intermediate_VNI vni 100001
       vxlan learn-restrict any
 
-### Выводы ромежуточного оборудоваиня LACP 
+### Выводы промежуточного оборудования LACP 
 
 localhost#sh lacp peer
 
@@ -313,7 +313,7 @@ localhost#sh lacp peer
     Et2     Bundled | 8000,01-01-01-01-01-01        3   ALGs+CD    0x0001    32768
 
 
-
+### route-type на LEAF
 
 vEOS-Leaf1(config-if-Po1)#sh bgp evpn route-type auto-discovery 
 
