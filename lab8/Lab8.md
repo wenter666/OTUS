@@ -68,7 +68,7 @@
 |  Juniper Leaf1 xe-0/0/4 ip+1 |  30.30.30.30/30  |
 
 ## Схема
-![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab7/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0.png)
+![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab8/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0.png)
 
 ## Сводная таблица AS Juniper
 |  Оборудование  |      Lo0      |   AS  |
