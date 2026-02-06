@@ -195,42 +195,42 @@ root@vQFX-RE-Leaf1> show bgp summary
 
 #### Пинги от Lo0 ARISTA до Lo0 Juniper летят
 
-vEOS-Leaf1# ping 10.0.255.3 source 20.0.255.1
-PING 10.0.255.3 (10.0.255.3) from 20.0.255.1 : 72(100) bytes of data.
-80 bytes from 10.0.255.3: icmp_seq=1 ttl=60 time=474 ms
-80 bytes from 10.0.255.3: icmp_seq=2 ttl=60 time=465 ms
-80 bytes from 10.0.255.3: icmp_seq=3 ttl=60 time=455 ms
-80 bytes from 10.0.255.3: icmp_seq=4 ttl=60 time=445 ms
-80 bytes from 10.0.255.3: icmp_seq=5 ttl=60 time=434 ms
+    vEOS-Leaf1# ping 10.0.255.3 source 20.0.255.1
+    PING 10.0.255.3 (10.0.255.3) from 20.0.255.1 : 72(100) bytes of data.
+    80 bytes from 10.0.255.3: icmp_seq=1 ttl=60 time=474 ms
+    80 bytes from 10.0.255.3: icmp_seq=2 ttl=60 time=465 ms
+    80 bytes from 10.0.255.3: icmp_seq=3 ttl=60 time=455 ms
+    80 bytes from 10.0.255.3: icmp_seq=4 ttl=60 time=445 ms
+    80 bytes from 10.0.255.3: icmp_seq=5 ttl=60 time=434 ms
 
 
-root@vQFX-RE-Leaf3> ping 20.0.255.1 source 10.0.255.3 
-PING 20.0.255.1 (20.0.255.1): 56 data bytes
-64 bytes from 20.0.255.1: icmp_seq=0 ttl=60 time=376.898 ms
-64 bytes from 20.0.255.1: icmp_seq=1 ttl=60 time=490.660 ms
-64 bytes from 20.0.255.1: icmp_seq=2 ttl=60 time=500.144 ms
-^C
---- 20.0.255.1 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max/stddev = 376.898/455.901/500.144/55.997 ms
+    root@vQFX-RE-Leaf3> ping 20.0.255.1 source 10.0.255.3 
+    PING 20.0.255.1 (20.0.255.1): 56 data bytes
+    64 bytes from 20.0.255.1: icmp_seq=0 ttl=60 time=376.898 ms
+    64 bytes from 20.0.255.1: icmp_seq=1 ttl=60 time=490.660 ms
+    64 bytes from 20.0.255.1: icmp_seq=2 ttl=60 time=500.144 ms
+    ^C
+    --- 20.0.255.1 ping statistics ---
+    3 packets transmitted, 3 packets received, 0% packet loss
+    round-trip min/avg/max/stddev = 376.898/455.901/500.144/55.997 ms
 
 
 Но не работает.
 
-root@ubuntu:~# ping 192.168.2.1
-PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
-^C
---- 192.168.2.1 ping statistics ---
-3 packets transmitted, 0 received, 100% packet loss, time 2010ms
+    root@ubuntu:~# ping 192.168.2.1
+    PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
+    ^C
+    --- 192.168.2.1 ping statistics ---
+    3 packets transmitted, 0 received, 100% packet loss, time 2010ms
 
 
 
-Если брать один VNI между multihoming leaf1+leaf2 ARISTA и leaf1+leaf2 Juniper, все работает. То есть L3 работает, а вот L3 не хочет.
+    Если брать один VNI между multihoming leaf1+leaf2 ARISTA и leaf1+leaf2 Juniper, все работает. То есть L3 работает, а вот L3 не хочет.
 
-root@ubuntu:~# ping 192.168.0.1
-PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
-64 bytes from 192.168.0.1: icmp_seq=1 ttl=64 time=242 ms
-64 bytes from 192.168.0.1: icmp_seq=2 ttl=64 time=157 ms
-64 bytes from 192.168.0.1: icmp_seq=3 ttl=64 time=380 ms
-^C
+    root@ubuntu:~# ping 192.168.0.1
+    PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
+    64 bytes from 192.168.0.1: icmp_seq=1 ttl=64 time=242 ms
+    64 bytes from 192.168.0.1: icmp_seq=2 ttl=64 time=157 ms
+    64 bytes from 192.168.0.1: icmp_seq=3 ttl=64 time=380 ms
+    ^C
 
