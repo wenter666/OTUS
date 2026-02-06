@@ -160,14 +160,14 @@
 
 ### BGP
 
-root@vQFX-RE-Leaf1> show bgp summary 
-  20.0.255.3            64003       3631       3554       0       1  1d 1:28:42 Establ
-    Intermediate_VNI.evpn.0: 5/5/5/0
-    __default_evpn__.evpn.0: 0/0/0/0
-    bgp.evpn.0: 15/15/15/0
-    default-switch.evpn.0: 10/10/10/0
-  30.30.30.1            64003       3463       3275       0       3  1d 0:34:38 Establ
-    inet.0: 8/8/8/0
+    root@vQFX-RE-Leaf1> show bgp summary 
+      20.0.255.3            64003       3631       3554       0       1  1d 1:28:42 Establ
+        Intermediate_VNI.evpn.0: 5/5/5/0
+        __default_evpn__.evpn.0: 0/0/0/0
+        bgp.evpn.0: 15/15/15/0
+        default-switch.evpn.0: 10/10/10/0
+      30.30.30.1            64003       3463       3275       0       3  1d 0:34:38 Establ
+        inet.0: 8/8/8/0
 
 
     vEOS-Leaf3#sh bgp  summary 
