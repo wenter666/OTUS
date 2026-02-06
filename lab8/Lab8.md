@@ -109,54 +109,54 @@
 
 ### LEAF1 ARISTA
 
-router bgp 64003
-   router-id 20.0.255.3
-   no bgp default ipv4-unicast
-   distance bgp 20 200 200
-   maximum-paths 4 ecmp 64
-   neighbor MULTIPOD peer group
-   neighbor MULTIPOD remote-as 65001
-   neighbor MULTIPOD_EVPN-VxLAN peer group
-   neighbor MULTIPOD_EVPN-VxLAN remote-as 65000
-   neighbor MULTIPOD_EVPN-VxLAN next-hop-unchanged
-   neighbor MULTIPOD_EVPN-VxLAN update-source Loopback0
-   neighbor MULTIPOD_EVPN-VxLAN ebgp-multihop 3
-   neighbor MULTIPOD_EVPN-VxLAN send-community extended
-   neighbor OVERLAY_EVPN-VxLAN peer group
-   neighbor OVERLAY_EVPN-VxLAN remote-as 64000
-   neighbor OVERLAY_EVPN-VxLAN update-source Loopback0
-   neighbor OVERLAY_EVPN-VxLAN ebgp-multihop 3
-   neighbor OVERLAY_EVPN-VxLAN send-community extended
-   neighbor underlay peer group
-   neighbor underlay remote-as 64000
-   neighbor 10.0.255.1 peer group MULTIPOD_EVPN-VxLAN
-   neighbor 20.0.0.1 peer group OVERLAY_EVPN-VxLAN
-   neighbor 20.0.0.2 peer group OVERLAY_EVPN-VxLAN
-   neighbor 20.0.1.5 peer group underlay
-   neighbor 20.0.2.5 peer group underlay
-   neighbor 30.30.30.2 peer group MULTIPOD
-   !
-   vlan 300
-      rd 64003:300300
-      route-target both 300:300300
-      redistribute learned
-   !
-   address-family evpn
-      neighbor MULTIPOD_EVPN-VxLAN activate
-      neighbor OVERLAY_EVPN-VxLAN activate
-   !
-   address-family ipv4
-      neighbor MULTIPOD activate
-      neighbor underlay activate
-      network 20.0.255.3/32
-      network 20.255.255.3/32
-   !
-   vrf Intermediate_VNI
-      rd 20.0.255.3:1
-      route-target import evpn 1:1
-      route-target export evpn 1:1
-      redistribute connected
-!
+    router bgp 64003
+      router-id 20.0.255.3
+      no bgp default ipv4-unicast
+      distance bgp 20 200 200
+      maximum-paths 4 ecmp 64
+      neighbor MULTIPOD peer group
+      neighbor MULTIPOD remote-as 65001
+      neighbor MULTIPOD_EVPN-VxLAN peer group
+      neighbor MULTIPOD_EVPN-VxLAN remote-as 65000
+      neighbor MULTIPOD_EVPN-VxLAN next-hop-unchanged
+      neighbor MULTIPOD_EVPN-VxLAN update-source Loopback0
+      neighbor MULTIPOD_EVPN-VxLAN ebgp-multihop 3
+      neighbor MULTIPOD_EVPN-VxLAN send-community extended
+      neighbor OVERLAY_EVPN-VxLAN peer group
+      neighbor OVERLAY_EVPN-VxLAN remote-as 64000
+      neighbor OVERLAY_EVPN-VxLAN update-source Loopback0
+      neighbor OVERLAY_EVPN-VxLAN ebgp-multihop 3
+      neighbor OVERLAY_EVPN-VxLAN send-community extended
+      neighbor underlay peer group
+      neighbor underlay remote-as 64000
+      neighbor 10.0.255.1 peer group MULTIPOD_EVPN-VxLAN
+      neighbor 20.0.0.1 peer group OVERLAY_EVPN-VxLAN
+      neighbor 20.0.0.2 peer group OVERLAY_EVPN-VxLAN
+      neighbor 20.0.1.5 peer group underlay
+      neighbor 20.0.2.5 peer group underlay
+      neighbor 30.30.30.2 peer group MULTIPOD
+      !
+      vlan 300
+          rd 64003:300300
+          route-target both 300:300300
+          redistribute learned
+      !
+      address-family evpn
+          neighbor MULTIPOD_EVPN-VxLAN activate
+          neighbor OVERLAY_EVPN-VxLAN activate
+      !
+      address-family ipv4
+          neighbor MULTIPOD activate
+          neighbor underlay activate
+          network 20.0.255.3/32
+          network 20.255.255.3/32
+      !
+      vrf Intermediate_VNI
+          rd 20.0.255.3:1
+          route-target import evpn 1:1
+          route-target export evpn 1:1
+          redistribute connected
+    !
 
 ### BGP
 
