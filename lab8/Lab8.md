@@ -1,5 +1,5 @@
 # Д/з №8
-## VXLAN. Multihoming
+## ДЗ: VxLAN. Routing.
 Цель:
 Реализовать передачу суммарных префиксов через EVPN route-type 5.
 Сделать по возможности MULTIPOD
