@@ -170,6 +170,7 @@
         inet.0: 8/8/8/0
 
 
+
     vEOS-Leaf3#sh bgp  summary 
     BGP summary information for VRF default
     Router identifier 20.0.255.3, local AS number 64003
@@ -226,6 +227,7 @@
     3 packets transmitted, 0 received, 100% packet loss, time 2010ms
 
 
+#### L2 в работе.
 
     Если брать один VNI между multihoming leaf1+leaf2 ARISTA и leaf1+leaf2 Juniper, все работает. То есть L3 работает, а вот L3 не хочет.
 
