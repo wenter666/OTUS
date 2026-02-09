@@ -31,7 +31,7 @@
 |        BorderLeaf      |        p2p       |      EDGE      |
 |------------------------|------------------|----------------|
 |  ARISTA Leaf3 Vlan4001 |  10.10.10.10/30  |  ge-0/0/0.4001 |
-|  ARISTA Leaf3 Vlan4002 |  20.20.20.20/30  |  ge-0/0/1.4002 |
+|  ARISTA Leaf3 Vlan4002 |  20.20.20.20/30  |  ge-0/0/0.4002 |
 
 
 ## Схема
@@ -473,16 +473,16 @@
 
 **vEOS-Leaf3**#sh ip route  vrf  TENANT200
 
-Gateway of last resort:
- B E      0.0.0.0/0 [20/0]
-           via 20.20.20.2, Vlan4002
+        Gateway of last resort:
+        B E      0.0.0.0/0 [20/0]
+                via 20.20.20.2, Vlan4002
 
- C        20.20.20.0/30
-           directly connected, Vlan4002
- B E      192.168.2.1/32 [20/0]
-           via VTEP 20.255.255.2 VNI 222222 router-mac 50:27:14:56:01:70 local-interface Vxlan1
- B E      192.168.2.0/24 [20/0]
-           via VTEP 20.255.255.2 VNI 222222 router-mac 50:27:14:56:01:70 local-interface Vxlan1
+        C        20.20.20.0/30
+                directly connected, Vlan4002
+        B E      192.168.2.1/32 [20/0]
+                via VTEP 20.255.255.2 VNI 222222 router-mac 50:27:14:56:01:70 local-interface Vxlan1
+        B E      192.168.2.0/24 [20/0]
+                via VTEP 20.255.255.2 VNI 222222 router-mac 50:27:14:56:01:70 local-interface Vxlan1
 
 **vEOS-Leaf3**#sh bgp evpn route-type ip-prefix ipv4
 
@@ -524,6 +524,7 @@ root@ubuntu:~# ping 192.168.2.1
 #### Пинг наружу  Client1
 
 root@ubuntu:~# ping 8.8.8.8  
+
         PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
         64 bytes from 8.8.8.8: icmp_seq=1 ttl=62 time=8.20 ms
         64 bytes from 8.8.8.8: icmp_seq=2 ttl=62 time=8.08 ms
