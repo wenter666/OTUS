@@ -76,13 +76,16 @@
         set policy-options policy-statement SEND-DEFAULT term 1 from route-filter 0.0.0.0/0 exact - ***Генерация дефолта***
         set policy-options policy-statement SEND-DEFAULT term 1 then accept
         set policy-options policy-statement SEND-DEFAULT term 2 then reject
+
         set routing-instances TEST instance-type virtual-router
         set routing-instances TEST interface lo0.100
+
         set routing-options router-id 100.100.100.100
         set routing-options autonomous-system 63000
+
         set routing-options static route 0.0.0.0/0 discard -- ***Генерация дефолта***
         set routing-options instance-import LEAK_FROM_TEST
-        set protocols router-advertisement interface fxp0.0
+
         set protocols bgp group TO_COD log-updown
         set protocols bgp group TO_COD export SEND-DEFAULT
         set protocols bgp group TO_COD graceful-restart
@@ -93,12 +96,6 @@
 ### LEAF1 ARISTA
 
         hostname vEOS-Leaf1
-        !
-        spanning-tree mode mstp
-        !
-        system l1
-        unsupported speed action error
-        unsupported error-correction action error
         !
         vlan 100
         name vlan100
@@ -185,12 +182,6 @@
 
         hostname vEOS-Leaf2
         !
-        spanning-tree mode mstp
-        !
-        system l1
-        unsupported speed action error
-        unsupported error-correction action error
-        !
         vlan 200
         name vlan200
         !
@@ -275,13 +266,8 @@
 
 ### LEAF3 ARISTA
 
-                hostname vEOS-Leaf3
-        !
-        spanning-tree mode mstp
-        !
-        system l1
-        unsupported speed action error
-        unsupported error-correction action error
+        hostname vEOS-Leaf3
+        
         !
         vlan 100
         name vlan100
