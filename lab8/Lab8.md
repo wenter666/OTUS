@@ -35,7 +35,7 @@
 
 
 ## Схема
-![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab8/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0.png)|
+![Общая схема](https://raw.githubusercontent.com/wenter666/OTUS/refs/heads/main/lab8/%D0%A1%D1%85%D0%B5%D0%BC%D0%B01.png)|
 
 ## Сводная таблица AS ARISTA
 |  Оборудование  |      Lo0      |   AS  |
