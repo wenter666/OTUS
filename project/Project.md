@@ -6,9 +6,9 @@
 Описание:
 Логика работы изменилась с предыдущих работ, теперь underlay OSPF, overlay EBGP.
 
-Client1 существует в обоих POD, связность у него L2, так же в POD JUniper у него Multihoming.   
+Client1 существует в обоих POD, связность у него L2, так же в POD Juniper у него Multihoming.   
 Связность с Client2 через L3VNI внутри POD Arista   
-Связность с Client3 через L3VNI между POD Arista и POD Arista   
+Связность с Client3 через L3VNI между POD Arista и POD Juniper 
 Общий выход через EDGE роутер для обоих POD.    
 
 ## Сводная таблица (Juniper)
